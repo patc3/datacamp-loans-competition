@@ -22,18 +22,15 @@ sapply(df, \(x)if(is.factor(x)) levels(x))
 
 #### compare nearest-neighbors methods ####
 # data prep
-#df$id <- 1:nrow(df)
 df <- cast(df, type_from="character", type_to="factor") # purpose is a factor
 
 # tt
 tt <- ttsplit(df, .7)
-#tt <- replace_target_in_test_set_with_missing_and_add_ref_table_to_environment(tt, target = "not_fully_paid", unique_id = "id", ref_name = "ref_target")
 
 # gower
 tt <- add_neighbor_target_gower(tt)
 lapply(tt, \(df) xtabs(~nn_gower + get(v_target), data=df)/nrow(df))
 lapply(tt, \(df) df %>% filter(get(v_target)==1) %>% summarise(metric=sum(nn_gower==1)/n())) # true pos; sensitivity
+
 # need confusion matrix here
 
-
-#tt <- add_target_back_to_test_set_from_ref_table(tt, ref_target)
