@@ -20,9 +20,13 @@ load_data <- function(as_df=FALSE)
 }
 
 #### data prep ####
-# make type into factors
+# make type_from variables into type_to
 cast <- function(df, type_from, type_to)
 {
+  "
+  Ex.: cast(df, 'numeric', 'factor') will make numeric variables in to factors
+  
+  "
   v <- sapply(df, \(x) inherits(x, type_from))
   v <- names(v)[which(v)]
   for(c in v) df[,c] <- do.call(paste0("as.", type_to), list(df[,c]))
@@ -86,23 +90,22 @@ add_neighbor_target_gower <- function(tt)
 }
 
 
-add_neighbor_target_from_dist_matrix <- function(tt)#, dist)
+add_neighbor_target_from_dist_matrix <- function(tt, dist)
 {
   "
   input:  tt is train-test list
           dist is distance or dissimilarity matrix
   output: df with neighbor added
   "
-  tt_fv <- lapply(tt, \(df) {df[,v_target] <- NULL; return(df)})
-  dist <- daisy(do.call(rbind, tt_fv), metric="gower", stand=TRUE, weights=rep(1, ncol(tt_fv[[1]])))
+  # create the dist matrix
   dist <- as.matrix(dist)
   
   # remove (i,i) entries to remove self selection
   diag(dist) <- Inf
   
   # limit choice to train obs
-  n_train <- nrow(tt_fv$train)
-  n_test <- nrow(tt_fv$test) 
+  n_train <- nrow(tt$train)
+  n_test <- nrow(tt$test) 
   dist <- dist[,1:n_train] # remove test columns
   
   # get index in train set
@@ -120,7 +123,19 @@ add_neighbor_target_from_dist_matrix <- function(tt)#, dist)
   return(tt)
 }
 
-
+# generic fn to get distance matrix from selected fn
+get_dist <- function(tt, fn, ...)
+{
+  # remove target
+  tt_fv <- lapply(tt, \(df) {df[,v_target] <- NULL; return(df)})
+  
+  # get dist
+  dist <- fn(do.call(rbind, tt_fv), ...)
+  #dist <- daisy(do.call(rbind, tt_fv), metric="gower", stand=TRUE, weights=rep(1, ncol(tt_fv[[1]])))
+  
+  # out
+  return(dist)
+}
 
 
 

@@ -25,6 +25,15 @@ df <- cast(df, type_from="character", type_to="factor") # purpose is a factor
 # tt
 tt <- ttsplit(df, .7)
 
+# get dist
+# daisy gower
+dist <- get_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=rep(1, ncol(tt$train)-1))
+tt <- add_neighbor_target_from_dist_matrix(tt, dist)
+conf_mat(tt$train %>% cast("numeric", "factor"), truth=v_target, estimate="nn")
+conf_mat(tt$test %>% cast("numeric", "factor"), truth=v_target, estimate="nn")
+
+
+
 # gower
 tt <- add_neighbor_target_gower(tt)
 lapply(tt, \(df) xtabs(~nn_gower + get(v_target), data=df)/nrow(df))
@@ -35,8 +44,6 @@ conf_mat(tt$train %>% cast("numeric", "factor"), truth=v_target, estimate="nn_go
 conf_mat(tt$test %>% cast("numeric", "factor"), truth=v_target, estimate="nn_gower")
 
 
-# daisy gower
-tt <- add_neighbor_target_from_dist_matrix(tt)
-conf_mat(tt$train %>% cast("numeric", "factor"), truth=v_target, estimate="nn")
-conf_mat(tt$test %>% cast("numeric", "factor"), truth=v_target, estimate="nn")
+
+
 
