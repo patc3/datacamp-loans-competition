@@ -8,6 +8,7 @@ loans pip
 rm(list=ls())
 source("loans_fn.R")
 df <- load_data(as_df = TRUE)
+df <- df %>% slice_sample(n=1000)
 str(df)
 summary(df)
 
@@ -29,7 +30,9 @@ tt <- ttsplit(df, .7)
 
 # gower
 tt <- add_neighbor_target_gower(tt)
-lapply(tt, \(df) xtabs(~nn_gower + not_fully_paid, data=df))
+lapply(tt, \(df) xtabs(~nn_gower + not_fully_paid, data=df)/nrow(df))
+lapply(tt, \(df) df %>% filter(not_fully_paid==1) %>% summarise(metric=sum(nn_gower==1)/n())) # true pos; sensitivity
+# need confusion matrix here
 
 
 #tt <- add_target_back_to_test_set_from_ref_table(tt, ref_target)

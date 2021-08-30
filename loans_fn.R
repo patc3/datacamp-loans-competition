@@ -6,6 +6,7 @@ loans fn
 
 "
 #### imports ####
+library(dplyr)
 library(gower)
 #library(cluster)
 
