@@ -8,7 +8,8 @@ loans fn
 #### imports ####
 library(dplyr)
 library(gower)
-#library(cluster)
+library(cluster)
+library(tidymodels)
 
 #### load data ####
 load_data <- function(as_df=FALSE)
@@ -85,9 +86,39 @@ add_neighbor_target_gower <- function(tt)
 }
 
 
-
-
-
+add_neighbor_target_from_dist_matrix <- function(tt)#, dist)
+{
+  "
+  input:  tt is train-test list
+          dist is distance or dissimilarity matrix
+  output: df with neighbor added
+  "
+  tt_fv <- lapply(tt, \(df) {df[,v_target] <- NULL; return(df)})
+  dist <- daisy(do.call(rbind, tt_fv), metric="gower", stand=TRUE, weights=rep(1, ncol(tt_fv[[1]])))
+  dist <- as.matrix(dist)
+  
+  # remove (i,i) entries to remove self selection
+  diag(dist) <- Inf
+  
+  # limit choice to train obs
+  n_train <- nrow(tt_fv$train)
+  n_test <- nrow(tt_fv$test) 
+  dist <- dist[,1:n_train] # remove test columns
+  
+  # get index in train set
+  ix <- apply(dist, 1, which.min)
+  ix_train <- ix[1:n_train]
+  ix_test <- ix[(n_train+1):length(ix)]
+  
+  # add target from train
+  col <- "nn"#paste0("nn_", round(runif(n=1, min=9999, max=99999999), 0))
+  tt$train[,col] <- tt$train[ix_train,v_target]
+  tt$test[,col] <- tt$train[ix_test,v_target]
+  
+  # out
+  print(paste0("Added column to train and test: ", col))
+  return(tt)
+}
 
 
 

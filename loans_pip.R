@@ -17,8 +17,6 @@ summary(df)
 # could do pipelines
 # could do both
 
-sapply(df, \(x)if(is.factor(x)) levels(x))
-
 
 #### compare nearest-neighbors methods ####
 # data prep
@@ -33,4 +31,12 @@ lapply(tt, \(df) xtabs(~nn_gower + get(v_target), data=df)/nrow(df))
 lapply(tt, \(df) df %>% filter(get(v_target)==1) %>% summarise(metric=sum(nn_gower==1)/n())) # true pos; sensitivity
 
 # need confusion matrix here
+conf_mat(tt$train %>% cast("numeric", "factor"), truth=v_target, estimate="nn_gower")
+conf_mat(tt$test %>% cast("numeric", "factor"), truth=v_target, estimate="nn_gower")
+
+
+# daisy gower
+tt <- add_neighbor_target_from_dist_matrix(tt)
+conf_mat(tt$train %>% cast("numeric", "factor"), truth=v_target, estimate="nn")
+conf_mat(tt$test %>% cast("numeric", "factor"), truth=v_target, estimate="nn")
 
