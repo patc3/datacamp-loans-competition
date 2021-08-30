@@ -82,15 +82,35 @@ add_target_back_to_test_set_from_ref_table <- function(df, ref_table)
 add_neighbor_target_gower <- function(tt)
 {
   tt_gower <- lapply(tt, \(df) return(df[,!names(df) %in% c("id", "not_fully_paid")]))
-  tt_gower$train_topn <- gower_topn(x=tt_gower$train, y=tt_gower$train, n=1, weights = rep(1, ncol(tt_gower$train)))
-  
-  tt_gower$topn <- lapply(tt_gower, \(df) { 
+  tt_gower$topn <- list()
+  tt_gower$nn_target <- list()
+
+  # loop
+  for (g in c("train", "test"))
+  {
+    print(g)
     neighbor <- c()
-    for (i in 1:nrow(df))
+    nn_target <- c()
+    g_train <- tt_gower[[g]]
+    for (i in 1:nrow(g_train))
     {
-      neighbor[i] <- gower_topn(x=df[i,], y=tt_gower$train, n=1, weights=rep(1, ncol(tt_gower$train)))$index[1,1]
+      print(i)
+      g_test <- tt_gower[["train"]]
+      if(g=="train") g_test <- g_test[-i,]
+      neighbor[i] <- gower_topn(x=g_train[i,], y=g_test, n=1, weights=rep(1, ncol(tt_gower$train)))$index[1,1] + ifelse(g=="train", 1, 0)
+      nn_target[i] <- tt$train$not_fully_paid[neighbor[i]]
     }
-  })
+    tt_gower$topn[[g]] <- neighbor
+    tt_gower$nn_target[[g]] <- nn_target
+    
+    # add to tt
+    tt[[g]]$nn_gower <- tt_gower$nn_target[[g]]
+  }
+  
+    
+  # out
+  print("Added variable nn_gower to train and test")
+  return(tt)
 }
 
 
