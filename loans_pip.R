@@ -27,23 +27,24 @@ tt <- ttsplit(df, .7)
 
 # get dist
 # daisy gower
-dist <- get_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=rep(1, ncol(tt$train)-1))
-tt <- add_neighbor_target_from_dist_matrix(tt, dist)
-conf_mat(tt$train %>% cast("numeric", "factor"), truth=v_target, estimate="nn")
-conf_mat(tt$test %>% cast("numeric", "factor"), truth=v_target, estimate="nn")
+dist <- get_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=rep(1, ncol(tt$train)-1)) # -1 bc target gets removed
+tt_gower_daisy <- add_neighbor_target_from_dist_matrix(tt, dist)
+conf_mat(tt_gower_daisy$train %>% cast("numeric", "factor"), truth=v_target, estimate="nn")
+conf_mat(tt_gower_daisy$test %>% cast("numeric", "factor"), truth=v_target, estimate="nn")
 
 
 
 # gower
-tt <- add_neighbor_target_gower(tt)
-lapply(tt, \(df) xtabs(~nn_gower + get(v_target), data=df)/nrow(df))
-lapply(tt, \(df) df %>% filter(get(v_target)==1) %>% summarise(metric=sum(nn_gower==1)/n())) # true pos; sensitivity
+tt_gower <- add_neighbor_target_gower(tt)
+lapply(tt_gower, \(df) xtabs(~nn_gower + get(v_target), data=df)/nrow(df))
+lapply(tt_gower, \(df) df %>% filter(get(v_target)==1) %>% summarise(metric=sum(nn_gower==1)/n())) # true pos; sensitivity
 
 # need confusion matrix here
-conf_mat(tt$train %>% cast("numeric", "factor"), truth=v_target, estimate="nn_gower")
-conf_mat(tt$test %>% cast("numeric", "factor"), truth=v_target, estimate="nn_gower")
+conf_mat(tt_gower$train %>% cast("numeric", "factor"), truth=v_target, estimate="nn_gower")
+conf_mat(tt_gower$test %>% cast("numeric", "factor"), truth=v_target, estimate="nn_gower")
 
 
+# make factor into dummy for other distances (e.g. euclidian for kNN)
 
 
 
