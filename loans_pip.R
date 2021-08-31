@@ -25,6 +25,9 @@ df <- cast(df, type_from="character", type_to="factor") # purpose is a factor
 # tt
 tt <- ttsplit(df, .7)
 
+# scale
+tt <- scale_numeric_features_in_train_and_test(tt)
+
 # get dist
 # daisy gower
 dist <- get_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=rep(1, ncol(tt$train)-1)) # -1 bc target gets removed
@@ -45,6 +48,16 @@ conf_mat(tt_gower$test %>% cast("numeric", "factor"), truth=v_target, estimate="
 
 
 # make factor into dummy for other distances (e.g. euclidian for kNN)
+tt <- lapply(tt, make_factors_into_dummies)
+dist <- get_dist(tt, fn=stats::dist, method="euclidian")
+tt_euclidian <- add_neighbor_target_from_dist_matrix(tt, dist)
+conf_mat(tt_euclidian$train %>% cast("numeric", "factor"), truth=v_target, estimate="nn")
+conf_mat(tt_euclidian$test %>% cast("numeric", "factor"), truth=v_target, estimate="nn")
+
+
+
+
+
 
 
 

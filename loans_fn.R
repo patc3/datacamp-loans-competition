@@ -10,6 +10,9 @@ library(dplyr)
 library(gower)
 library(cluster)
 library(tidymodels)
+req_pckgs <- c("fastDummies", "dataPreparation")
+req_pckgs <- req_pckgs[which(!req_pckgs %in% rownames(installed.packages()))]
+if(length(req_pckgs) != 0) install.packages(req_pckgs)
 
 #### load data ####
 load_data <- function(as_df=FALSE)
@@ -37,6 +40,17 @@ cast <- function(df, type_from, type_to)
   return(df)
 }
 
+# dummies
+make_factors_into_dummies <- function(df, remove_first_dummy = TRUE, ignore_na = TRUE)
+{
+  df <- fastDummies::dummy_cols(df, remove_first_dummy = remove_first_dummy, ignore_na = ignore_na, remove_selected_columns = TRUE)
+  
+  # out
+  print("Used fastDummies to make factors into dummies")
+  return(df)
+}
+
+
 
 #### train test ####
 # ttsplit
@@ -48,6 +62,22 @@ ttsplit <- function(df, prop_train=.7)
   df_split$test <- df[-ix,]
   print(paste0("Split df into list with: train, test (proportion train = ", prop_train, ")"))
   return(df_split)
+}
+
+# scale numeric vars
+scale_numeric_features_in_train_and_test <- function(tt)
+{
+  # scale numeric features train & test
+  v_num <- colnames(tt$train)[which(sapply(tt$train, class) %in% c("numeric", "integer"))]
+  scales <- dataPreparation::build_scales(data_set = tt$train, cols=v_num, verbose=TRUE)
+  tt$train <- dataPreparation::fast_scale(data_set = tt$train, scales = scales, verbose = TRUE) %>% as.data.frame
+  
+  # test
+  tt$test <- dataPreparation::fast_scale(data_set = tt$test, scales=scales, verbose=TRUE) %>% as.data.frame
+  
+  # out
+  print("Created numerical scales using train set and rescaled numerical features in train and test")
+  return(tt)
 }
 
 
