@@ -173,11 +173,23 @@ get_metrics <- function(tt, nn_var="nn", ...)
   "
   ... to be passed to conf_mat
   "
+  
+  # make target and nn factors (conf_mat only takes factors)
+  tt <- lapply(tt, cast, "numeric", "factor")
+  
+  # make sure nn and v_target have the same factor levels
+  if(is.factor(tt$train[,v_target])) tt <- lapply(tt, \(df){ df[,nn_var] <- factor(df[,nn_var], levels=levels(tt$train[,v_target])); df })
+  
+  # get metrics
   metrics <- list(
-    train=conf_mat(tt$train %>% cast("numeric", "factor"), truth=v_target, estimate=nn_var),
-    test=conf_mat(tt$test %>% cast("numeric", "factor"), truth=v_target, estimate=nn_var)
+    train=conf_mat(tt$train, truth=v_target, estimate=nn_var),
+    test=conf_mat(tt$test, truth=v_target, estimate=nn_var)
   )
+  
+  # print summary
   print(lapply(metrics, summary))
+  
+  # out
   return(metrics)
 }
 
