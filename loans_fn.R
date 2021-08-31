@@ -220,7 +220,7 @@ get_gower_weights <- function(tt, min_vars=1, n_combinations=NULL)
   
   # filtering
   weights <- weights[rowSums(weights) >= min_vars,] # remove row where all weights are 0
-  if(!is.null(n_combinations)) weights <- weights %>% slice_sample(n=n_combinations)
+  if(!is.null(n_combinations)) weights <- weights %>% slice_sample(n=min(nrow(.), n_combinations))
   
   # out
   return(weights)

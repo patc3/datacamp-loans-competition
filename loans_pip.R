@@ -24,37 +24,44 @@ df <- cast(df, type_from="character", type_to="factor") # purpose is a factor
 
 # tt
 tt <- ttsplit(df, .7)
+# tv (to choose gower weights)
+tv <- ttsplit(tt$train, .7)
 
 # scale
 tt <- scale_numeric_features_in_train_and_test(tt)
-
+tv <- scale_numeric_features_in_train_and_test(tv)
 
 #### gower with daisy: optimize gower weights ####
-# get dist
-# daisy gower
-
-get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=rep(1, ncol(tt$train)-1)) # -1 bc target gets removed
-
 
 # loop to optimize weights
-weights <- get_gower_weights(tt, min_vars = 1, n_combinations = 1000)
-metrics <- get_gower_metrics_for_weights(tt, weights_matrix = weights)
+weights <- get_gower_weights(tv, min_vars = 3, n_combinations = 1000)
+metrics <- get_gower_metrics_for_weights(tv, weights_matrix = weights)
 
 
 # post
 acc <- sapply(metrics, \(m) m$test %>% filter(.metric=="accuracy") %>% pull(.estimate))
 acc[which(sapply(metrics, \(m) any(is.na(m$test$.estimate))))] <- NA # remove only one prediction
-summary(acc)
-hist(acc)
-weights <- get_gower_weights(tt)
-weights[which(acc>.84),]
-weights[which(acc<.71),]
-metrics[which(acc>.80)]
-sapply(weights[which(acc<.71),], sum) # to find which vars are most and least common in this bad lot
+
 
 # avg train and test because all high values in test seem more normal in train
 acc_tt <- sapply(metrics, \(m) mean(sapply(m, \(tbl) tbl %>% filter(.metric=="accuracy") %>% pull(.estimate))))
+acc_tt[which(sapply(metrics, \(m) any(sapply(m, \(tbl) any(is.na(tbl$.estimate))))))] <- NA # remove only one prediction
+summary(acc_tt)
 hist(acc_tt)
+sapply(weights[which(acc_tt>.78),], sum) # to find which vars are most and least common in this good lot
+
+
+
+# need to compare to actual test set when using a set to choose weights
+# ie should do tv (train valid) then tt
+# choose weights and run with tt to get test metrics
+weights_max <- weights[which.max(acc_tt),]
+get_gower_metrics_for_weights(tt, weights_matrix = weights_max)
+get_gower_metrics_for_weights(tt, weights_matrix = matrix(1)) # all weighted equally
+# equivalent:
+#get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=rep(1, ncol(tt$train)-1)) # -1 bc target gets removed
+
+
 
 #### roc curves for binary outcomes (not_fully_paid) ####
 # to compare models
