@@ -173,10 +173,12 @@ get_metrics <- function(tt, nn_var="nn", ...)
   "
   ... to be passed to conf_mat
   "
-  list(
+  metrics <- list(
     train=conf_mat(tt$train %>% cast("numeric", "factor"), truth=v_target, estimate=nn_var),
     test=conf_mat(tt$test %>% cast("numeric", "factor"), truth=v_target, estimate=nn_var)
   )
+  print(lapply(metrics, summary))
+  return(metrics)
 }
 
 # pipeline to get metrics from tt and dist function

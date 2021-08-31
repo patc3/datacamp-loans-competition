@@ -6,7 +6,7 @@ loans pip
 
 "
 rm(list=ls())
-v_target <- c("not_fully_paid", "purpose")[1]
+v_target <- c("not_fully_paid", "purpose")[2]
 source("loans_fn.R")
 df <- load_data(as_df = TRUE)
 df <- df %>% slice_sample(n=1000)
@@ -44,6 +44,11 @@ get_metrics(tt_gower, nn_var = "nn_gower")
 # make factor into dummy for other distances (e.g. euclidian for kNN)
 if(!is.factor(tt$train[,v_target])) tt <- lapply(tt, make_factors_into_dummies)
 get_metrics_with_dist(tt, fn=stats::dist, method="euclidian")
-lapply(get_metrics_with_dist(tt, fn=stats::dist, method="euclidian"), summary)
+get_metrics_with_dist(tt, fn=stats::dist, method="maximum")
+get_metrics_with_dist(tt, fn=stats::dist, method="manhattan")
+get_metrics_with_dist(tt, fn=stats::dist, method="canberra")
+get_metrics_with_dist(tt, fn=stats::dist, method="binary")
+get_metrics_with_dist(tt, fn=stats::dist, method="minkowski")
+#lapply(get_metrics_with_dist(tt, fn=stats::dist, method="euclidian"), summary)
 
 
