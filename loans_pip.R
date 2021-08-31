@@ -44,6 +44,7 @@ metrics <- get_gower_metrics_for_weights(tt)
 acc <- sapply(metrics, \(m) m %>% filter(.metric=="accuracy") %>% pull(.estimate))
 acc[which(sapply(metrics, \(m) any(is.na(m$.estimate))))] <- NA # remove only one prediction
 hist(acc)
+weights <- get_gower_metrics_for_weights(tt, return_weights=TRUE)
 weights[which(acc>.84),]
 weights[which(acc<.71),]
 metrics[which(acc>.84)]
