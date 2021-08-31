@@ -204,16 +204,28 @@ get_metrics_with_dist <- function(tt, fn=NULL, ...)
   
 }
 
-# optimize weights in gower
-get_gower_metrics_for_weights <- function(tt, return_weights=FALSE)
+
+# get gower weights
+get_gower_weights <- function(tt)
 {
+  
   # define weight matrix
   weights <- list()
   for (i in 1:(ncol(tt$train)-1)) weights[[i]] <- c(0,1)
   weights <- expand.grid(weights)
   weights <- weights[rowSums(weights)!=0,] # remove row where all weights are 0
   colnames(weights) <- (.n <- colnames(tt$train))[.n != v_target]
-  if(return_weights) return(weights)
+  
+  # out
+  return(weights)
+}
+
+
+# optimize weights in gower
+get_gower_metrics_for_weights <- function(tt, weights_matrix=NULL)
+{
+  # define weight matrix
+  weights <- if(is.null(weights_matrix)) get_gower_weights(tt) else weights_matrix
   
   # get metrics for all weights
   metrics <- list()
