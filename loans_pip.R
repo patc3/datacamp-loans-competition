@@ -6,7 +6,7 @@ loans pip
 
 "
 rm(list=ls())
-v_target <- c("not_fully_paid", "purpose")[2]
+v_target <- c("not_fully_paid", "purpose")[1]
 source("loans_fn.R")
 df <- load_data(as_df = TRUE)
 df <- df %>% slice_sample(n=1000)
@@ -28,11 +28,30 @@ tt <- ttsplit(df, .7)
 # scale
 tt <- scale_numeric_features_in_train_and_test(tt)
 
+
+#### gower with daisy: optimize gower weights ####
 # get dist
 # daisy gower
 get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=rep(1, ncol(tt$train)-1)) # -1 bc target gets removed
 
 
+# loop to optimize weights
+weights <- list()
+for (i in 1:(ncol(tt$train)-1)) weights[[i]] <- c(0,1)
+weights <- expand.grid(weights)
+weights <- weights[rowSums(weights)!=0,]
+metrics <- list()
+for (i in 1:nrow(weights)) 
+{
+    sink("NUL")
+    metrics[[i]] <- summary(get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=weights[i,])$test)
+    sink()
+    if(i%%100==0) print(round(i/nrow(weights)*100))
+}
+
+
+
+#### cluster::gower ####
 # gower
 tt_gower <- add_neighbor_target_gower(tt)
 #lapply(tt_gower, \(df) xtabs(~nn_gower + get(v_target), data=df)/nrow(df))
@@ -40,6 +59,10 @@ tt_gower <- add_neighbor_target_gower(tt)
 
 # need confusion matrix here
 get_metrics(tt_gower, nn_var = "nn_gower")
+
+
+
+#### numerical distances ####
 
 # make factor into dummy for other distances (e.g. euclidian for kNN)
 if(!is.factor(tt$train[,v_target])) tt <- lapply(tt, make_factors_into_dummies)
@@ -50,5 +73,11 @@ get_metrics_with_dist(tt, fn=stats::dist, method="canberra")
 get_metrics_with_dist(tt, fn=stats::dist, method="binary")
 get_metrics_with_dist(tt, fn=stats::dist, method="minkowski")
 #lapply(get_metrics_with_dist(tt, fn=stats::dist, method="euclidian"), summary)
+
+
+
+
+
+
 
 
