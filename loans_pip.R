@@ -42,6 +42,7 @@ metrics <- get_gower_metrics_for_weights(tt)
 
 # post
 acc <- sapply(metrics, \(m) m %>% filter(.metric=="accuracy") %>% pull(.estimate))
+acc[which(sapply(metrics, \(m) any(is.na(m$.estimate))))] <- NA # remove only one prediction
 hist(acc)
 weights[which(acc>.84),]
 weights[which(acc<.71),]
@@ -51,6 +52,10 @@ metrics[which(acc>.84)]
 
 #### roc curves for binary outcomes (not_fully_paid) ####
 # to compare models
+
+
+
+
 
 
 
