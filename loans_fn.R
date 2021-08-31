@@ -204,6 +204,28 @@ get_metrics_with_dist <- function(tt, fn=NULL, ...)
   
 }
 
+# optimize weights in gower
+get_gower_metrics_for_weights <- function(tt)
+{
+  # define weight matrix
+  weights <- list()
+  for (i in 1:(ncol(tt$train)-1)) weights[[i]] <- c(0,1)
+  weights <- expand.grid(weights)
+  weights <- weights[rowSums(weights)!=0,] # remove row where all weights are 0
+  
+  # get metrics for all weights
+  metrics <- list()
+  for (i in 1:nrow(weights)) 
+  {
+    sink("NUL")
+    metrics[[i]] <- summary(get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=weights[i,])$test)
+    sink()
+    if(i%%100==0) print(round(i/nrow(weights)*100))
+  }
+  
+  # out
+  return(metrics)
+}
 
 
 

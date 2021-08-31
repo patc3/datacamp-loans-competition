@@ -32,22 +32,25 @@ tt <- scale_numeric_features_in_train_and_test(tt)
 #### gower with daisy: optimize gower weights ####
 # get dist
 # daisy gower
+
 get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=rep(1, ncol(tt$train)-1)) # -1 bc target gets removed
 
 
 # loop to optimize weights
-weights <- list()
-for (i in 1:(ncol(tt$train)-1)) weights[[i]] <- c(0,1)
-weights <- expand.grid(weights)
-weights <- weights[rowSums(weights)!=0,]
-metrics <- list()
-for (i in 1:nrow(weights)) 
-{
-    sink("NUL")
-    metrics[[i]] <- summary(get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=weights[i,])$test)
-    sink()
-    if(i%%100==0) print(round(i/nrow(weights)*100))
-}
+metrics <- get_gower_metrics_for_weights(tt)
+
+
+# post
+acc <- sapply(metrics, \(m) m %>% filter(.metric=="accuracy") %>% pull(.estimate))
+hist(acc)
+weights[which(acc>.84),]
+weights[which(acc<.71),]
+metrics[which(acc>.84)]
+
+
+
+#### roc curves for binary outcomes (not_fully_paid) ####
+# to compare models
 
 
 
