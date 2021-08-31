@@ -35,14 +35,15 @@ get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights
 
 # gower
 tt_gower <- add_neighbor_target_gower(tt)
-lapply(tt_gower, \(df) xtabs(~nn_gower + get(v_target), data=df)/nrow(df))
-lapply(tt_gower, \(df) df %>% filter(get(v_target)==1) %>% summarise(metric=sum(nn_gower==1)/n())) # true pos; sensitivity
+#lapply(tt_gower, \(df) xtabs(~nn_gower + get(v_target), data=df)/nrow(df))
+#lapply(tt_gower, \(df) df %>% filter(get(v_target)==1) %>% summarise(metric=sum(nn_gower==1)/n())) # true pos; sensitivity
 
 # need confusion matrix here
 get_metrics(tt_gower, nn_var = "nn_gower")
 
 # make factor into dummy for other distances (e.g. euclidian for kNN)
-tt <- lapply(tt, make_factors_into_dummies)
+if(!is.factor(tt$train[,v_target])) tt <- lapply(tt, make_factors_into_dummies)
 get_metrics_with_dist(tt, fn=stats::dist, method="euclidian")
+lapply(get_metrics_with_dist(tt, fn=stats::dist, method="euclidian"), summary)
 
 
