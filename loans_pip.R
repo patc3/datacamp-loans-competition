@@ -37,7 +37,7 @@ get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights
 
 
 # loop to optimize weights
-weights <- get_gower_weights(tt, min_vars = 3, n_combinations = 500)
+weights <- get_gower_weights(tt, min_vars = 1, n_combinations = 1000)
 metrics <- get_gower_metrics_for_weights(tt, weights_matrix = weights)
 
 
@@ -49,9 +49,12 @@ hist(acc)
 weights <- get_gower_weights(tt)
 weights[which(acc>.84),]
 weights[which(acc<.71),]
-metrics[which(acc>.84)]
+metrics[which(acc>.80)]
 sapply(weights[which(acc<.71),], sum) # to find which vars are most and least common in this bad lot
 
+# avg train and test because all high values in test seem more normal in train
+acc_tt <- sapply(metrics, \(m) mean(sapply(m, \(tbl) tbl %>% filter(.metric=="accuracy") %>% pull(.estimate))))
+hist(acc_tt)
 
 #### roc curves for binary outcomes (not_fully_paid) ####
 # to compare models
