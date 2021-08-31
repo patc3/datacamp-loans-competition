@@ -100,7 +100,7 @@ add_neighbor_target_gower <- function(tt)
     g_train <- tt_gower[[g]]
     for (i in 1:nrow(g_train))
     {
-      print(i)
+      #print(i)
       g_test <- tt_gower[["train"]]
       if(g=="train") g_test <- g_test[-i,]
       neighbor[i] <- gower_topn(x=g_train[i,], y=g_test, n=1, weights=rep(1, ncol(tt_gower$train)))$index[1,1] + ifelse(g=="train", 1, 0)
@@ -173,8 +173,10 @@ get_metrics <- function(tt, nn_var="nn", ...)
   "
   ... to be passed to conf_mat
   "
-  conf_mat(tt$train %>% cast("numeric", "factor"), truth=v_target, estimate=nn_var)
-  conf_mat(tt$test %>% cast("numeric", "factor"), truth=v_target, estimate=nn_var)
+  list(
+    train=conf_mat(tt$train %>% cast("numeric", "factor"), truth=v_target, estimate=nn_var),
+    test=conf_mat(tt$test %>% cast("numeric", "factor"), truth=v_target, estimate=nn_var)
+  )
 }
 
 # pipeline to get metrics from tt and dist function
