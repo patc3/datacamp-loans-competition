@@ -206,15 +206,21 @@ get_metrics_with_dist <- function(tt, fn=NULL, ...)
 
 
 # get gower weights
-get_gower_weights <- function(tt)
+get_gower_weights <- function(tt, min_vars=1, n_combinations=NULL)
 {
+  
+  # arg check
+  if(min_vars<1) stop("min_var needs to be >= 1")
   
   # define weight matrix
   weights <- list()
   for (i in 1:(ncol(tt$train)-1)) weights[[i]] <- c(0,1)
   weights <- expand.grid(weights)
-  weights <- weights[rowSums(weights)!=0,] # remove row where all weights are 0
   colnames(weights) <- (.n <- colnames(tt$train))[.n != v_target]
+  
+  # filtering
+  weights <- weights[rowSums(weights) >= min_vars,] # remove row where all weights are 0
+  if(!is.null(n_combinations)) weights <- weights %>% slice_sample(n=n_combinations)
   
   # out
   return(weights)

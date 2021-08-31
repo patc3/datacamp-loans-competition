@@ -37,7 +37,8 @@ get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights
 
 
 # loop to optimize weights
-metrics <- get_gower_metrics_for_weights(tt)
+weights <- get_gower_weights(tt, min_vars = 3, n_combinations = 500)
+metrics <- get_gower_metrics_for_weights(tt, weights_matrix = weights)
 
 
 # post
