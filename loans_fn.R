@@ -219,7 +219,7 @@ get_gower_metrics_for_weights <- function(tt, return_weights=FALSE)
   metrics <- list()
   for (i in 1:nrow(weights)) 
   {
-    sink("NUL")
+    sink("/dev/null")
     metrics[[i]] <- summary(get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=weights[i,])$test)
     sink()
     if(i%%100==0) print(round(i/nrow(weights)*100))
