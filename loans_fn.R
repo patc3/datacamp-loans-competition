@@ -167,6 +167,27 @@ get_dist <- function(tt, fn, ...)
   return(dist)
 }
 
+# get metrics
+get_metrics <- function(tt, nn_var="nn", ...)
+{
+  "
+  ... to be passed to conf_mat
+  "
+  conf_mat(tt$train %>% cast("numeric", "factor"), truth=v_target, estimate=nn_var)
+  conf_mat(tt$test %>% cast("numeric", "factor"), truth=v_target, estimate=nn_var)
+}
+
+# pipeline to get metrics from tt and dist function
+get_metrics_with_dist <- function(tt, fn=NULL, ...)
+{
+  dist <- get_dist(tt, fn=fn, ...)
+  tt <- add_neighbor_target_from_dist_matrix(tt, dist)
+  
+  # metrics
+  get_metrics(tt, ...)
+  
+}
+
 
 
 
