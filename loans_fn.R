@@ -276,7 +276,7 @@ get_gower_metrics_for_weights <- function(tt, weights_matrix=NULL, eval_fn=yards
 
 
 # retrieve best weights for gower
-get_gower_best_weights <- function(weights, metrics, choose_by=c("accuracy", "mean_metric"))
+get_gower_best_weights <- function(weights, metrics, choose_by=c("accuracy", "mean_metric", "auc"))
 {
   "
   input:  weights used to get metrics list (from get_gower_weights())
@@ -302,6 +302,12 @@ get_gower_best_weights <- function(weights, metrics, choose_by=c("accuracy", "me
     acc_tt <- sapply(metrics, \(m)sapply(m, \(tbl) mean(tbl$.estimate)))
     acc_tt <- colMeans(acc_tt)
     acc_tt[which(sapply(metrics, \(m) any(sapply(m, \(tbl) any(tbl$.estimate < 0)))))] <- NA # remove any weights combination that yield negative metrics estimates
+  }
+  
+  if (choose_by == "auc")
+  {
+    acc_tt <- sapply(metrics, \(m)sapply(m, \(tbl) tbl %>% pull(.estimate)))
+    acc_tt <- colMeans(acc_tt)
   }
   
   # need to compare to actual test set when using a set to choose weights

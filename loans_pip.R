@@ -9,7 +9,7 @@ rm(list=ls())
 v_target <- c("not_fully_paid", "purpose")[1]
 source("loans_fn.R")
 df <- load_data(as_df = TRUE)
-df <- df %>% slice_sample(n=1000)
+df <- df %>% slice_sample(n=3000)
 str(df)
 summary(df)
 
@@ -38,8 +38,8 @@ tv <- scale_numeric_features_in_train_and_test(tv)
 
 # loop to optimize weights
 weights <- get_gower_weights(tv, min_vars = 3, n_combinations = 100)
-metrics <- get_gower_metrics_for_weights(tv, weights_matrix = weights)
-weights_max <- get_gower_best_weights(weights, metrics, choose_by=c("accuracy","mean_metric")[1])
+metrics <- get_gower_metrics_for_weights(tv, weights_matrix = weights, eval_fn = yardstick::roc_auc)
+weights_max <- get_gower_best_weights(weights, metrics, choose_by=c("accuracy","mean_metric","auc")[3])
 weights_manual <- c(credit_policy=1, purpose=1, int_rate=0, installment=0, log_annual_inc=0, 
                     dti=0, fico=0, days_with_cr_line=0, revol_bal=0,
                     revol_util=0, inq_last_6mths=0, delinq_2yrs=0, pub_rec=1) %>% as.list %>% as.data.frame
