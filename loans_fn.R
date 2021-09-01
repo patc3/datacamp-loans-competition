@@ -51,7 +51,16 @@ make_factors_into_dummies <- function(df, remove_first_dummy = TRUE, ignore_na =
 
 
 # normalize (range 0-1)
-normalize <- function(x) {(x-min(x, na.rm=TRUE))/(max(x, na.rm=TRUE)-min(x, na.rm=TRUE))}
+normalize <- function(x, replace_negative_Inf=TRUE) 
+{
+  if(replace_negative_Inf & -Inf %in% x)
+  {
+    ix <- which(x==-Inf)
+    x[ix] <- NA
+    x[ix] <- min(x, na.rm=TRUE)
+  }
+  (x-min(x, na.rm=TRUE))/(max(x, na.rm=TRUE)-min(x, na.rm=TRUE))
+}
 
 
 # logistic
