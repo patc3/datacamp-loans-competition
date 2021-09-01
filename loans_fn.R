@@ -231,15 +231,46 @@ get_gower_metrics_for_weights <- function(tt, weights_matrix=NULL)
   metrics <- list()
   for (i in 1:nrow(weights)) 
   {
-    sink("/dev/null")
+    sink("NUL")
     m <- get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=weights[i,])
     metrics[[i]] <- lapply(m, summary)
     sink()
-    if(i%%100==0) print(round(i/nrow(weights)*100))
+    #if(i%%100==0) print(round(i/nrow(weights)*100))
+    print(i)
   }
   
   # out
   return(metrics)
+}
+
+
+# retrieve best weights for gower
+get_gower_best_weights <- function(weights, metrics)
+{
+  "
+  input:  weights used to get metrics list (from get_gower_weights())
+          metrics is metrics list (from get_gower_metrics_for_weights())
+  output: matrix with 1 row (best weights)
+  "
+  # post: test only
+  #acc <- sapply(metrics, \(m) m$test %>% filter(.metric=="accuracy") %>% pull(.estimate))
+  #acc[which(sapply(metrics, \(m) any(is.na(m$test$.estimate))))] <- NA # remove only one prediction
+  
+  # avg train and test because all high values in test seem more normal in train
+  acc_tt <- sapply(metrics, \(m) mean(sapply(m, \(tbl) tbl %>% filter(.metric=="accuracy") %>% pull(.estimate))))
+  acc_tt[which(sapply(metrics, \(m) any(sapply(m, \(tbl) any(is.na(tbl$.estimate))))))] <- NA # remove only one prediction
+  #summary(acc_tt)
+  #hist(acc_tt)
+  #sapply(weights[which(acc_tt>.78),], sum) # to find which vars are most and least common in this good lot
+  
+  # need to compare to actual test set when using a set to choose weights
+  # ie should do tv (train valid) then tt
+  # choose weights and run with tt to get test metrics
+  weights_max <- weights[which.max(acc_tt),]
+  # (credit_policy), purpose, pub_rec
+  
+  # out
+  return(weights_max)
 }
 
 

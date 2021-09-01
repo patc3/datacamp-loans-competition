@@ -9,7 +9,7 @@ rm(list=ls())
 v_target <- c("not_fully_paid", "purpose")[1]
 source("loans_fn.R")
 df <- load_data(as_df = TRUE)
-#df <- df %>% slice_sample(n=1000)
+df <- df %>% slice_sample(n=1000)
 str(df)
 summary(df)
 
@@ -39,27 +39,9 @@ tv <- scale_numeric_features_in_train_and_test(tv)
 # loop to optimize weights
 weights <- get_gower_weights(tv, min_vars = 2, n_combinations = 1000)
 metrics <- get_gower_metrics_for_weights(tv, weights_matrix = weights)
+weights_max <- get_gower_best_weights(weights, metrics)
 
 
-# post: test only
-acc <- sapply(metrics, \(m) m$test %>% filter(.metric=="accuracy") %>% pull(.estimate))
-acc[which(sapply(metrics, \(m) any(is.na(m$test$.estimate))))] <- NA # remove only one prediction
-
-
-# avg train and test because all high values in test seem more normal in train
-acc_tt <- sapply(metrics, \(m) mean(sapply(m, \(tbl) tbl %>% filter(.metric=="accuracy") %>% pull(.estimate))))
-acc_tt[which(sapply(metrics, \(m) any(sapply(m, \(tbl) any(is.na(tbl$.estimate))))))] <- NA # remove only one prediction
-summary(acc_tt)
-hist(acc_tt)
-sapply(weights[which(acc_tt>.78),], sum) # to find which vars are most and least common in this good lot
-
-
-
-# need to compare to actual test set when using a set to choose weights
-# ie should do tv (train valid) then tt
-# choose weights and run with tt to get test metrics
-(weights_max <- weights[which.max(acc_tt),])
-# (credit_policy), purpose, pub_rec
 get_gower_metrics_for_weights(tt, weights_matrix = weights_max)
 get_gower_metrics_for_weights(tt, weights_matrix = matrix(1)) # all weighted equally
 # equivalent:
@@ -83,6 +65,7 @@ get_gower_metrics_for_weights(tt, weights_matrix = matrix(1)) # all weighted equ
 #get metrics: roc curve (start with new fn then combine?)
 
 dist<-get_dist(tt, cluster::daisy, metric="gower", stand=TRUE)
+dist<-get_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max)
 p_fn <- list(
   NL=\(d)normalize(log(d)),
   N=\(d)normalize(d),
