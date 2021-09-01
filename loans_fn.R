@@ -288,7 +288,7 @@ get_gower_best_weights <- function(weights, metrics)
 
 
 # get roc curves using same function call as get_dist()
-get_roc_curves_for_dist <- function(...)
+get_roc_curves_for_dist <- function(..., plot_hist=FALSE)
 {
   "
   input:  ... is fn call to get_dist()
@@ -313,7 +313,7 @@ get_roc_curves_for_dist <- function(...)
   {
     tt_p <- add_neighbor_target_from_dist_matrix(tt = tt, dist = dist, 
                                                  p_add = TRUE, p_fn = p_fn[[fn_name]])
-    p_hist[[fn_name]] <- lapply(tt_p, \(df)hist(df$nn_p, plot=F))
+    if(plot_hist) p_hist[[fn_name]] <- lapply(tt_p, \(df)hist(df$nn_p, plot=F))
     x<-tt_p$test$not_fully_paid
     tt_p$test$not_fully_paid[which(x==min(x))] <- 0
     tt_p$test$not_fully_paid[which(x==max(x))] <- 1
@@ -322,9 +322,9 @@ get_roc_curves_for_dist <- function(...)
     #print(autoplot(roc))
     #dev.new()
   }
-  lapply(seq_along(p_hist), \(i) lapply(p_hist[[i]], \(h) plot(h, main=names(p_hist)[i])))
-  lapply(seq_along(roc_list), \(i) print(autoplot(roc_list[[i]]) + ggtitle(names(roc_list)[i])))
-  
+  if(plot_hist) lapply(seq_along(p_hist), \(i) lapply(p_hist[[i]], \(h) plot(h, main=names(p_hist)[i])))
+  roc <- lapply(seq_along(roc_list), \(i) autoplot(roc_list[[i]]) + ggtitle(names(roc_list)[i]))
+  return(roc)
 }
 
 
