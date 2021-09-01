@@ -107,7 +107,7 @@ get_dist <- function(tt, fn, ...)
 }
 
 
-add_neighbor_target_from_dist_matrix <- function(tt, dist, p_add=FALSE, p_fn=\(d)normalize(log(d)))
+add_neighbor_target_from_dist_matrix <- function(tt, dist, p_add=TRUE, p_fn=\(d)normalize(log(d)))
 {
   "
   input:  tt is train-test list
@@ -123,7 +123,7 @@ add_neighbor_target_from_dist_matrix <- function(tt, dist, p_add=FALSE, p_fn=\(d
   diag(dist) <- NA
   
   # transform to probabilities (no attempt to calibrate)
-  dist <- p_fn(dist) # could take log as well; also logistic() with or without log
+  if(p_add) dist <- p_fn(dist) # could take log as well; also logistic() with or without log
   
   # limit choice to train obs
   n_train <- nrow(tt$train)
@@ -141,15 +141,18 @@ add_neighbor_target_from_dist_matrix <- function(tt, dist, p_add=FALSE, p_fn=\(d
   tt$test[,col] <- tt$train[ix_test,v_target]
   
   # add p
-  p_col <- "nn_p"
-  #set p_yes to similarity (1-diss) if neighbor target is 1, or diss if neighbor is 0
-  # ???????
-  min_dists <- sapply(seq_along(rownames(dist)), \(i) dist[i, ix[i]])
-  ix_yes <- which(do.call(rbind, tt)[,col] %in% c(1, "1", max(tt$train[,v_target]))) # max() is because target is standardized
-  min_dists[ix_yes] <- 1-min_dists[ix_yes]
-  # add
-  tt$train[,p_col] <- min_dists[1:n_train]
-  tt$test[,p_col] <- min_dists[(n_train+1):length(min_dists)]
+  if(p_add)
+  {
+    p_col <- "nn_p"
+    #set p_yes to similarity (1-diss) if neighbor target is 1, or diss if neighbor is 0
+    # ???????
+    min_dists <- sapply(seq_along(rownames(dist)), \(i) dist[i, ix[i]])
+    ix_yes <- which(do.call(rbind, tt)[,col] %in% c(1, "1", max(tt$train[,v_target]))) # max() is because target is standardized
+    min_dists[ix_yes] <- 1-min_dists[ix_yes]
+    # add
+    tt$train[,p_col] <- min_dists[1:n_train]
+    tt$test[,p_col] <- min_dists[(n_train+1):length(min_dists)]
+  }
   
   # out
   print(paste("Added column(s) to train and test:", col, if(p_add) p_col else NULL))
