@@ -9,7 +9,7 @@ rm(list=ls())
 v_target <- c("not_fully_paid", "purpose")[1]
 source("loans_fn.R")
 df <- load_data(as_df = TRUE)
-df <- df %>% slice_sample(n=1000)
+#df <- df %>% slice_sample(n=1000)
 str(df)
 summary(df)
 
@@ -83,9 +83,30 @@ get_gower_metrics_for_weights(tt, weights_matrix = matrix(1)) # all weighted equ
 #get metrics: roc curve (start with new fn then combine?)
 
 dist<-get_dist(tt, cluster::daisy, metric="gower", stand=TRUE)
-tt_p <- add_neighbor_target_from_dist_matrix(tt = tt, dist = dist, 
-                                             p_add = TRUE, p_fn = \(d)normalize(log(d)))
-lapply(tt_p, \(df)hist(df$nn_p))
+p_fn <- list(
+  NL=\(d)normalize(log(d)),
+  N=\(d)normalize(d),
+  LL=\(d)logistic(log(d)),
+  L=\(d)logistic(d)
+  )
+roc_list<-list()
+for(fn_name in names(p_fn))
+{
+  tt_p <- add_neighbor_target_from_dist_matrix(tt = tt, dist = dist, 
+                                               p_add = TRUE, p_fn = p_fn[[fn_name]])
+  lapply(tt_p, \(df)hist(df$nn_p, main=fn_name))
+  x<-tt_p$test$not_fully_paid
+  tt_p$test$not_fully_paid[which(x==min(x))] <- 0
+  tt_p$test$not_fully_paid[which(x==max(x))] <- 1
+  tt_p$test$not_fully_paid <- factor(tt_p$test$not_fully_paid, levels=c("1","0"), labels=c("Yes", "No"))
+  roc_list[[fn_name]] <- roc_curve(tt_p$test, truth=not_fully_paid, estimate=nn_p)
+  #print(autoplot(roc))
+  #dev.new()
+}
+lapply(seq_along(roc_list), \(i) autoplot(roc_list[[i]]) + ggtitle(names(roc_list)[i]))
+
+
+
 
 
 
@@ -105,7 +126,8 @@ get_metrics_with_dist(tt_num, fn=stats::dist, method="minkowski")
 
 
 get_metrics_with_dist(tt_num, fn=stats::dist, method="euclidian", eval_fn=yardstick::conf_mat)
-get_metrics_with_dist(tt_num, fn=stats::dist, method="euclidian", eval_fn=yardstick::roc_auc)
+
+
 
 
 
