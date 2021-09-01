@@ -92,6 +92,21 @@ scale_numeric_features_in_train_and_test <- function(tt)
 
 #### nearest neighbors ####
 
+# generic fn to get distance matrix from selected fn
+get_dist <- function(tt, fn, ...)
+{
+  # remove target
+  tt_fv <- lapply(tt, \(df) {df[,v_target] <- NULL; return(df)})
+  
+  # get dist
+  dist <- fn(do.call(rbind, tt_fv), ...)
+  #dist <- daisy(do.call(rbind, tt_fv), metric="gower", stand=TRUE, weights=rep(1, ncol(tt_fv[[1]])))
+  
+  # out
+  return(dist)
+}
+
+
 add_neighbor_target_from_dist_matrix <- function(tt, dist)
 {
   "
@@ -123,21 +138,6 @@ add_neighbor_target_from_dist_matrix <- function(tt, dist)
   # out
   print(paste0("Added column to train and test: ", col))
   return(tt)
-}
-
-
-# generic fn to get distance matrix from selected fn
-get_dist <- function(tt, fn, ...)
-{
-  # remove target
-  tt_fv <- lapply(tt, \(df) {df[,v_target] <- NULL; return(df)})
-  
-  # get dist
-  dist <- fn(do.call(rbind, tt_fv), ...)
-  #dist <- daisy(do.call(rbind, tt_fv), metric="gower", stand=TRUE, weights=rep(1, ncol(tt_fv[[1]])))
-  
-  # out
-  return(dist)
 }
 
 
