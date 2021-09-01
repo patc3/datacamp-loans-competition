@@ -37,7 +37,7 @@ tv <- scale_numeric_features_in_train_and_test(tv)
 #### gower with daisy: optimize gower weights ####
 
 # loop to optimize weights
-weights <- get_gower_weights(tv, min_vars = 3, n_combinations = 100)
+weights <- get_gower_weights(tv, min_vars = 3, n_combinations = 500)
 metrics <- get_gower_metrics_for_weights(tv, weights_matrix = weights)
 weights_max <- get_gower_best_weights(weights, metrics)
 
@@ -64,10 +64,18 @@ get_gower_metrics_for_weights(tt, weights_matrix = matrix(1)) # all weighted equ
 #add nn, new: add p var==categ
 #get metrics: roc curve (start with new fn then combine?)
 
-dist<-get_roc_curves_for_dist(tt, cluster::daisy, metric="gower", stand=TRUE)
-dist<-get_roc_curves_for_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max)
+roc <- list()
+roc$gower <- get_roc_curves_for_dist(tt, cluster::daisy, metric="gower", stand=TRUE)
+roc$gower_best <- get_roc_curves_for_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max)
 
-
+# make factor into dummy for other distances (e.g. euclidian for kNN)
+if(!is.factor(tt$train[,v_target])) tt_num <- lapply(tt, make_factors_into_dummies) else tt_num <- tt
+roc$euclidian <- get_roc_curves_for_dist(tt_num, fn=stats::dist, method="euclidian")
+roc$maximum <- get_roc_curves_for_dist(tt_num, fn=stats::dist, method="maximum")
+roc$manhattan <- get_roc_curves_for_dist(tt_num, fn=stats::dist, method="manhattan")
+roc$canberra <- get_roc_curves_for_dist(tt_num, fn=stats::dist, method="canberra")
+roc$binary <- get_roc_curves_for_dist(tt_num, fn=stats::dist, method="binary")
+roc$minkowski <- get_roc_curves_for_dist(tt_num, fn=stats::dist, method="minkowski")
 
 
 
