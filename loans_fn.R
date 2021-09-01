@@ -107,7 +107,7 @@ get_dist <- function(tt, fn, ...)
 }
 
 
-add_neighbor_target_from_dist_matrix <- function(tt, dist, p_add=FALSE, p_fn=\(p)normalize(log(p)))
+add_neighbor_target_from_dist_matrix <- function(tt, dist, p_add=FALSE, p_fn=\(d)normalize(log(d)))
 {
   "
   input:  tt is train-test list
@@ -152,17 +152,20 @@ add_neighbor_target_from_dist_matrix <- function(tt, dist, p_add=FALSE, p_fn=\(p
   tt$test[,p_col] <- min_dists[(n_train+1):length(min_dists)]
   
   # out
-  print(paste("Added column(s) to train and test:", col, ifelse(p_add, p_col, NULL)))
+  print(paste("Added column(s) to train and test:", col, if(p_add) p_col else NULL))
   return(tt)
 }
 
 
 # get metrics
-get_metrics <- function(tt, nn_var="nn", ...)
+get_metrics <- function(tt, eval_fn=yardstick::conf_mat, nn_var="nn", ...)
 {
   "
   ... to be passed to conf_mat
   "
+  
+  # eval fn
+  if(is.null(eval_fn)) eval_fn <- yardstick::conf_mat
   
   # make target and nn factors (conf_mat only takes factors)
   tt <- lapply(tt, cast, "numeric", "factor")
@@ -172,8 +175,8 @@ get_metrics <- function(tt, nn_var="nn", ...)
   
   # get metrics
   metrics <- list(
-    train=conf_mat(tt$train, truth=v_target, estimate=nn_var),
-    test=conf_mat(tt$test, truth=v_target, estimate=nn_var)
+    train=eval_fn(tt$train, truth=all_of(v_target), estimate=all_of(nn_var)),
+    test=eval_fn(tt$test, truth=all_of(v_target), estimate=all_of(nn_var))
   )
   
   # print summary
@@ -185,13 +188,13 @@ get_metrics <- function(tt, nn_var="nn", ...)
 
 
 # pipeline to get metrics from tt and dist function
-get_metrics_with_dist <- function(tt, fn=NULL, ...)
+get_metrics_with_dist <- function(tt, fn=NULL, eval_fn=NULL, ...)
 {
   dist <- get_dist(tt, fn=fn, ...)
   tt <- add_neighbor_target_from_dist_matrix(tt, dist)
   
   # metrics
-  get_metrics(tt, ...)
+  get_metrics(tt, eval_fn)
   
 }
 

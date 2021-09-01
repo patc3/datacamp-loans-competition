@@ -82,23 +82,9 @@ get_gower_metrics_for_weights(tt, weights_matrix = matrix(1)) # all weighted equ
 #add nn, new: add p var==categ
 #get metrics: roc curve (start with new fn then combine?)
 
-x<-get_dist(tt, cluster::daisy, metric="gower", stand=TRUE)
-class(x)
-min(as.matrix(x))
-hist(normalize(x))
-hist(logistic(x))
-hist(normalize(log(x)))
-hist(logistic(log(x)))
-
-
-x<-get_dist(tt_num, dist, method="euclidian")
-hist(log(as.matrix(x)))
-hist(normalize(log(x)))
-hist(logistic(log(x)))
-
-
 dist<-get_dist(tt, cluster::daisy, metric="gower", stand=TRUE)
-tt_p <- add_neighbor_target_from_dist_matrix(tt = tt, dist = dist, p_add = TRUE, p_fn = \(p)normalize(log(p)))
+tt_p <- add_neighbor_target_from_dist_matrix(tt = tt, dist = dist, 
+                                             p_add = TRUE, p_fn = \(d)normalize(log(d)))
 lapply(tt_p, \(df)hist(df$nn_p))
 
 
@@ -118,7 +104,8 @@ get_metrics_with_dist(tt_num, fn=stats::dist, method="minkowski")
 
 
 
-
+get_metrics_with_dist(tt_num, fn=stats::dist, method="euclidian", eval_fn=yardstick::conf_mat)
+get_metrics_with_dist(tt_num, fn=stats::dist, method="euclidian", eval_fn=yardstick::roc_auc)
 
 
 
