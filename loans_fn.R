@@ -257,7 +257,7 @@ get_gower_metrics_for_weights <- function(tt, weights_matrix=NULL)
 
 
 # retrieve best weights for gower
-get_gower_best_weights <- function(weights, metrics)
+get_gower_best_weights <- function(weights, metrics, choose_by=c("accuracy", "mean_metric"))
 {
   "
   input:  weights used to get metrics list (from get_gower_weights())
@@ -268,12 +268,22 @@ get_gower_best_weights <- function(weights, metrics)
   #acc <- sapply(metrics, \(m) m$test %>% filter(.metric=="accuracy") %>% pull(.estimate))
   #acc[which(sapply(metrics, \(m) any(is.na(m$test$.estimate))))] <- NA # remove only one prediction
   
-  # avg train and test because all high values in test seem more normal in train
-  acc_tt <- sapply(metrics, \(m) mean(sapply(m, \(tbl) tbl %>% filter(.metric=="accuracy") %>% pull(.estimate))))
-  acc_tt[which(sapply(metrics, \(m) any(sapply(m, \(tbl) any(is.na(tbl$.estimate))))))] <- NA # remove only one prediction
-  #summary(acc_tt)
-  #hist(acc_tt)
-  #sapply(weights[which(acc_tt>.78),], sum) # to find which vars are most and least common in this good lot
+  if (choose_by == "accuracy")
+  {
+    # avg train and test because all high values in test seem more normal in train
+    acc_tt <- sapply(metrics, \(m) mean(sapply(m, \(tbl) tbl %>% filter(.metric=="accuracy") %>% pull(.estimate))))
+    acc_tt[which(sapply(metrics, \(m) any(sapply(m, \(tbl) any(is.na(tbl$.estimate))))))] <- NA # remove only one prediction
+    #summary(acc_tt)
+    #hist(acc_tt)
+    #sapply(weights[which(acc_tt>.78),], sum) # to find which vars are most and least common in this good lot
+  }
+  
+  if (choose_by == "mean_metric")
+  {
+    acc_tt <- sapply(metrics, \(m)sapply(m, \(tbl) mean(tbl$.estimate)))
+    acc_tt <- colMeans(acc_tt)
+    acc_tt[which(sapply(metrics, \(m) any(sapply(m, \(tbl) any(tbl$.estimate < 0)))))] <- NA # remove any weights combination that yield negative metrics estimates
+  }
   
   # need to compare to actual test set when using a set to choose weights
   # ie should do tv (train valid) then tt
