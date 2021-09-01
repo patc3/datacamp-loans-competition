@@ -107,18 +107,23 @@ get_dist <- function(tt, fn, ...)
 }
 
 
-add_neighbor_target_from_dist_matrix <- function(tt, dist)
+add_neighbor_target_from_dist_matrix <- function(tt, dist, p_add=FALSE, p_fn=\(p)normalize(log(p)))
 {
   "
   input:  tt is train-test list
           dist is distance or dissimilarity matrix
+          p_add is whether to add probability (for ROC)
+          p_fn is function to convert dist to probabilities (needs to be monotonic)
   output: df with neighbor added
   "
   # create the dist matrix
   dist <- as.matrix(dist)
   
   # remove (i,i) entries to remove self selection
-  diag(dist) <- Inf
+  diag(dist) <- NA
+  
+  # transform to probabilities (no attempt to calibrate)
+  dist <- p_fn(dist) # could take log as well; also logistic() with or without log
   
   # limit choice to train obs
   n_train <- nrow(tt$train)
@@ -135,8 +140,19 @@ add_neighbor_target_from_dist_matrix <- function(tt, dist)
   tt$train[,col] <- tt$train[ix_train,v_target]
   tt$test[,col] <- tt$train[ix_test,v_target]
   
+  # add p
+  p_col <- "nn_p"
+  #set p_yes to similarity (1-diss) if neighbor target is 1, or diss if neighbor is 0
+  # ???????
+  min_dists <- sapply(seq_along(rownames(dist)), \(i) dist[i, ix[i]])
+  ix_yes <- which(do.call(rbind, tt)[,col] %in% c(1, "1", max(tt$train[,v_target]))) # max() is because target is standardized
+  min_dists[ix_yes] <- 1-min_dists[ix_yes]
+  # add
+  tt$train[,p_col] <- min_dists[1:n_train]
+  tt$test[,p_col] <- min_dists[(n_train+1):length(min_dists)]
+  
   # out
-  print(paste0("Added column to train and test: ", col))
+  print(paste("Added column(s) to train and test:", col, ifelse(p_add, p_col, NULL)))
   return(tt)
 }
 

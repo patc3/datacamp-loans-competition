@@ -78,8 +78,28 @@ get_gower_metrics_for_weights(tt, weights_matrix = matrix(1)) # all weighted equ
 # --> calc dist matrices, assign neighbor's target, 
 # set p_yes to similarity (1-diss) if neighbor target is 1, or diss if neighbor is 0
 
+#get dist
+#add nn, new: add p var==categ
+#get metrics: roc curve (start with new fn then combine?)
+
+x<-get_dist(tt, cluster::daisy, metric="gower", stand=TRUE)
+class(x)
+min(as.matrix(x))
+hist(normalize(x))
+hist(logistic(x))
+hist(normalize(log(x)))
+hist(logistic(log(x)))
 
 
+x<-get_dist(tt_num, dist, method="euclidian")
+hist(log(as.matrix(x)))
+hist(normalize(log(x)))
+hist(logistic(log(x)))
+
+
+dist<-get_dist(tt, cluster::daisy, metric="gower", stand=TRUE)
+tt_p <- add_neighbor_target_from_dist_matrix(tt = tt, dist = dist, p_add = TRUE, p_fn = \(p)normalize(log(p)))
+lapply(tt_p, \(df)hist(df$nn_p))
 
 
 
