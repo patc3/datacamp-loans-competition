@@ -306,9 +306,10 @@ get_roc_curves_for_dist <- function(..., plot_hist=FALSE)
     L=\(d)logistic(d)
   )
   
-  # get histograms of probabiltiies and roc curves
+  # get histograms of probabilities and roc curves
   p_hist <- list()
   roc_list<-list()
+  roc_auc <- list()
   for(fn_name in names(p_fn))
   {
     tt_p <- add_neighbor_target_from_dist_matrix(tt = tt, dist = dist, 
@@ -317,14 +318,15 @@ get_roc_curves_for_dist <- function(..., plot_hist=FALSE)
     x<-tt_p$test$not_fully_paid
     tt_p$test$not_fully_paid[which(x==min(x))] <- 0
     tt_p$test$not_fully_paid[which(x==max(x))] <- 1
-    tt_p$test$not_fully_paid <- factor(tt_p$test$not_fully_paid, levels=c("1","0"), labels=c("Yes", "No"))
+    tt_p$test$not_fully_paid <- factor(tt_p$test$not_fully_paid, levels=c("1","0"), labels=c("Yes", "No")) # ensure first level is positive class
+    roc_auc[[fn_name]] <- roc_auc(tt_p$test, truth=not_fully_paid, estimate=nn_p)
     roc_list[[fn_name]] <- roc_curve(tt_p$test, truth=not_fully_paid, estimate=nn_p)
     #print(autoplot(roc))
     #dev.new()
   }
   if(plot_hist) lapply(seq_along(p_hist), \(i) lapply(p_hist[[i]], \(h) plot(h, main=names(p_hist)[i])))
-  roc <- lapply(seq_along(roc_list), \(i) print(autoplot(roc_list[[i]]) + ggtitle(names(roc_list)[i])))
-  return(roc)
+  roc <- lapply(seq_along(roc_list), \(i) print(autoplot(roc_list[[i]]) + ggtitle(  paste0( names(roc_list)[i], " (AUC = ", round(roc_auc[[i]]$.estimate, 2), ")" )  )))
+  return(roc_auc)
 }
 
 
