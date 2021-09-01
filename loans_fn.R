@@ -7,7 +7,6 @@ loans fn
 "
 #### imports ####
 library(dplyr)
-library(gower)
 library(cluster)
 library(tidymodels)
 req_pckgs <- c("fastDummies", "dataPreparation")
@@ -83,42 +82,6 @@ scale_numeric_features_in_train_and_test <- function(tt)
 
 
 #### nearest neighbors ####
-
-# add neighbor's target: gower
-add_neighbor_target_gower <- function(tt)
-{
-  tt_gower <- lapply(tt, \(df) return(df[,!names(df) %in% c("id", v_target)]))
-  tt_gower$topn <- list()
-  tt_gower$nn_target <- list()
-
-  # loop
-  for (g in c("train", "test"))
-  {
-    print(g)
-    neighbor <- c()
-    nn_target <- tt[[g]][,v_target] # use actual target as placeholder to borrow the var's class (e.g. factor)
-    g_train <- tt_gower[[g]]
-    for (i in 1:nrow(g_train))
-    {
-      #print(i)
-      g_test <- tt_gower[["train"]]
-      if(g=="train") g_test <- g_test[-i,]
-      neighbor[i] <- gower_topn(x=g_train[i,], y=g_test, n=1, weights=rep(1, ncol(tt_gower$train)))$index[1,1] + ifelse(g=="train", 1, 0)
-      nn_target[i] <- tt$train[,v_target][neighbor[i]]
-    }
-    tt_gower$topn[[g]] <- neighbor
-    tt_gower$nn_target[[g]] <- nn_target
-    
-    # add to tt
-    tt[[g]]$nn_gower <- tt_gower$nn_target[[g]]
-  }
-  
-    
-  # out
-  print("Added variable nn_gower to train and test")
-  return(tt)
-}
-
 
 add_neighbor_target_from_dist_matrix <- function(tt, dist)
 {

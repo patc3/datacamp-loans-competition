@@ -31,14 +31,17 @@ tv <- ttsplit(tt$train, .7)
 tt <- scale_numeric_features_in_train_and_test(tt)
 tv <- scale_numeric_features_in_train_and_test(tv)
 
+
+
+
 #### gower with daisy: optimize gower weights ####
 
 # loop to optimize weights
-weights <- get_gower_weights(tv, min_vars = 3, n_combinations = 1000)
+weights <- get_gower_weights(tv, min_vars = 2, n_combinations = 1000)
 metrics <- get_gower_metrics_for_weights(tv, weights_matrix = weights)
 
 
-# post
+# post: test only
 acc <- sapply(metrics, \(m) m$test %>% filter(.metric=="accuracy") %>% pull(.estimate))
 acc[which(sapply(metrics, \(m) any(is.na(m$test$.estimate))))] <- NA # remove only one prediction
 
@@ -55,7 +58,8 @@ sapply(weights[which(acc_tt>.78),], sum) # to find which vars are most and least
 # need to compare to actual test set when using a set to choose weights
 # ie should do tv (train valid) then tt
 # choose weights and run with tt to get test metrics
-weights_max <- weights[which.max(acc_tt),]
+(weights_max <- weights[which.max(acc_tt),])
+# (credit_policy), purpose, pub_rec
 get_gower_metrics_for_weights(tt, weights_matrix = weights_max)
 get_gower_metrics_for_weights(tt, weights_matrix = matrix(1)) # all weighted equally
 # equivalent:
@@ -63,23 +67,20 @@ get_gower_metrics_for_weights(tt, weights_matrix = matrix(1)) # all weighted equ
 
 
 
+# try optim using optim() ?!
+
+
+
+
 #### roc curves for binary outcomes (not_fully_paid) ####
 # to compare models
+# NEED PROBABILITIES
+# --> calc dist matrices, assign neighbor's target, 
+# set p_yes to similarity (1-diss) if neighbor target is 1, or diss if neighbor is 0
 
 
 
 
-
-
-
-#### cluster::gower ####
-# gower
-tt_gower <- add_neighbor_target_gower(tt)
-#lapply(tt_gower, \(df) xtabs(~nn_gower + get(v_target), data=df)/nrow(df))
-#lapply(tt_gower, \(df) df %>% filter(get(v_target)==1) %>% summarise(metric=sum(nn_gower==1)/n())) # true pos; sensitivity
-
-# need confusion matrix here
-get_metrics(tt_gower, nn_var = "nn_gower")
 
 
 
