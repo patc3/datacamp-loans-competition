@@ -50,6 +50,14 @@ make_factors_into_dummies <- function(df, remove_first_dummy = TRUE, ignore_na =
 }
 
 
+# normalize (range 0-1)
+normalize <- function(x) (x-min(x))/(max(x)-min(x))
+
+
+# logistic
+logistic <- function(x) 1/(1+exp(-x))
+
+
 
 #### train test ####
 # ttsplit
@@ -62,6 +70,7 @@ ttsplit <- function(df, prop_train=.7)
   print(paste0("Split df into list with: train, test (proportion train = ", prop_train, ")"))
   return(df_split)
 }
+
 
 # scale numeric vars
 scale_numeric_features_in_train_and_test <- function(tt)
@@ -116,6 +125,7 @@ add_neighbor_target_from_dist_matrix <- function(tt, dist)
   return(tt)
 }
 
+
 # generic fn to get distance matrix from selected fn
 get_dist <- function(tt, fn, ...)
 {
@@ -129,6 +139,7 @@ get_dist <- function(tt, fn, ...)
   # out
   return(dist)
 }
+
 
 # get metrics
 get_metrics <- function(tt, nn_var="nn", ...)
@@ -155,6 +166,7 @@ get_metrics <- function(tt, nn_var="nn", ...)
   # out
   return(metrics)
 }
+
 
 # pipeline to get metrics from tt and dist function
 get_metrics_with_dist <- function(tt, fn=NULL, ...)
