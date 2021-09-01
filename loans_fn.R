@@ -51,11 +51,11 @@ make_factors_into_dummies <- function(df, remove_first_dummy = TRUE, ignore_na =
 
 
 # normalize (range 0-1)
-normalize <- function(x) (x-min(x))/(max(x)-min(x))
+normalize <- function(x) {(x-min(x, na.rm=TRUE))/(max(x, na.rm=TRUE)-min(x, na.rm=TRUE))}
 
 
 # logistic
-logistic <- function(x) 1/(1+exp(-x))
+logistic <- function(x) {1/(1+exp(-x))}
 
 
 
