@@ -323,7 +323,7 @@ get_roc_curves_for_dist <- function(..., plot_hist=FALSE)
     #dev.new()
   }
   if(plot_hist) lapply(seq_along(p_hist), \(i) lapply(p_hist[[i]], \(h) plot(h, main=names(p_hist)[i])))
-  roc <- lapply(seq_along(roc_list), \(i) autoplot(roc_list[[i]]) + ggtitle(names(roc_list)[i]))
+  roc <- lapply(seq_along(roc_list), \(i) print(autoplot(roc_list[[i]]) + ggtitle(names(roc_list)[i])))
   return(roc)
 }
 

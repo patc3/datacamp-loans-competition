@@ -40,7 +40,9 @@ tv <- scale_numeric_features_in_train_and_test(tv)
 weights <- get_gower_weights(tv, min_vars = 3, n_combinations = 500)
 metrics <- get_gower_metrics_for_weights(tv, weights_matrix = weights)
 weights_max <- get_gower_best_weights(weights, metrics)
-
+weights_manual <- c(credit_policy=1, purpose=1, int_rate=0, installment=0, log_annual_inc=0, 
+                    dti=0, fico=0, days_with_cr_line=0, revol_bal=0,
+                    revol_util=0, inq_last_6mths=0, delinq_2yrs=0, pub_rec=1) %>% as.list %>% as.data.frame
 
 get_gower_metrics_for_weights(tt, weights_matrix = weights_max)
 get_gower_metrics_for_weights(tt, weights_matrix = matrix(1)) # all weighted equally
@@ -67,6 +69,7 @@ get_gower_metrics_for_weights(tt, weights_matrix = matrix(1)) # all weighted equ
 roc <- list()
 roc$gower <- get_roc_curves_for_dist(tt, cluster::daisy, metric="gower", stand=TRUE)
 roc$gower_best <- get_roc_curves_for_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max)
+roc$gower_manual <- get_roc_curves_for_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_manual)
 
 # make factor into dummy for other distances (e.g. euclidian for kNN)
 if(!is.factor(tt$train[,v_target])) tt_num <- lapply(tt, make_factors_into_dummies) else tt_num <- tt
