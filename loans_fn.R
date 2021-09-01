@@ -116,7 +116,7 @@ get_dist <- function(tt, fn, ...)
 }
 
 
-add_neighbor_target_from_dist_matrix <- function(tt, dist, p_add=TRUE, p_fn=\(d)normalize(log(d)))
+add_neighbor_target_from_dist_matrix <- function(tt, dist, p_add=TRUE, p_fn=normalize)
 {
   "
   input:  tt is train-test list
@@ -170,25 +170,44 @@ add_neighbor_target_from_dist_matrix <- function(tt, dist, p_add=TRUE, p_fn=\(d)
 
 
 # get metrics
-get_metrics <- function(tt, eval_fn=yardstick::conf_mat, nn_var="nn", ...)
+get_metrics <- function(tt, eval_fn=yardstick::conf_mat, ...)
 {
   "
   ... to be passed to conf_mat
   "
   
-  # eval fn
+  # eval fn & estimate var
   if(is.null(eval_fn)) eval_fn <- yardstick::conf_mat
+  if(isTRUE(all.equal(eval_fn, yardstick::conf_mat))) nn_var <- "nn"
+  if(isTRUE(all.equal(eval_fn, yardstick::roc_auc))) nn_var <- "nn_p"
+  
   
   # make target and nn factors (conf_mat only takes factors)
   tt <- lapply(tt, cast, "numeric", "factor")
   
+  # top level comes first (for AUC)
+  tt <- lapply(tt, \(df) { df[,v_target] <- factor(df[,v_target], levels=sort(levels(df[,v_target]), decreasing = TRUE)) ; df } )
+  #tt <- lapply(tt, \(df) { df[,v_target] <- factor(df[,v_target], labels=paste0("Cat",0:(length(unique(df[,v_target]))-1))); df } )
+  # tt_p$test$not_fully_paid[which(x==min(x))] <- 0
+  # tt_p$test$not_fully_paid[which(x==max(x))] <- 1
+  # tt_p$test$not_fully_paid <- factor(tt_p$test$not_fully_paid, levels=c("1","0"), labels=c("Yes", "No")) # ensure first level is positive class
+  
   # make sure nn and v_target have the same factor levels
-  if(is.factor(tt$train[,v_target])) tt <- lapply(tt, \(df){ df[,nn_var] <- factor(df[,nn_var], levels=levels(tt$train[,v_target])); df })
+  if(nn_var=="nn") tt <- lapply(tt, \(df){ df[,nn_var] <- factor(df[,nn_var], levels=levels(tt$train[,v_target])); df })
+  
+    # nn_p is numeric
+  if(nn_var=="nn_p") tt <- lapply(tt, \(df) { df[,nn_var] <- as.numeric(as.character(df[,nn_var])) ; df } ) # sloppy: goes from num to factor to num
+
+  
+  # change to string levels
+  #tt <- lapply(tt, \(df) { df[,v_target] <- factor(df[,v_target], labels=paste0("Cat",0:(length(unique(df[,v_target]))-1))); df } )
+  #if(nn_var=="nn") tt <- lapply(tt, \(df) { df[,nn_var] <- factor(df[,nn_var], labels=paste0("Cat",0:(length(unique(df[,v_target]))-1))); df } ) # labels might be reversed :( sloppy, but will show in AUC<<.5
+  
   
   # get metrics
   metrics <- list(
-    train=eval_fn(tt$train, truth=all_of(v_target), estimate=all_of(nn_var)),
-    test=eval_fn(tt$test, truth=all_of(v_target), estimate=all_of(nn_var))
+    train=eval_fn(tt$train, truth=!!v_target, estimate=!!nn_var),
+    test=eval_fn(tt$test, truth=!!v_target, estimate=!!nn_var)
   )
   
   # print summary
@@ -200,7 +219,7 @@ get_metrics <- function(tt, eval_fn=yardstick::conf_mat, nn_var="nn", ...)
 
 
 # pipeline to get metrics from tt and dist function
-get_metrics_with_dist <- function(tt, fn=NULL, eval_fn=NULL, ...)
+get_metrics_with_dist <- function(tt, fn=NULL, ..., eval_fn=NULL)
 {
   dist <- get_dist(tt, fn=fn, ...)
   tt <- add_neighbor_target_from_dist_matrix(tt, dist)
@@ -234,7 +253,7 @@ get_gower_weights <- function(tt, min_vars=1, n_combinations=NULL)
 
 
 # optimize weights in gower
-get_gower_metrics_for_weights <- function(tt, weights_matrix=NULL)
+get_gower_metrics_for_weights <- function(tt, weights_matrix=NULL, eval_fn=yardstick::conf_mat)
 {
   # define weight matrix
   weights <- if(is.null(weights_matrix)) get_gower_weights(tt) else weights_matrix
@@ -244,8 +263,8 @@ get_gower_metrics_for_weights <- function(tt, weights_matrix=NULL)
   for (i in 1:nrow(weights)) 
   {
     sink("NUL")
-    m <- get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=weights[i,])
-    metrics[[i]] <- lapply(m, summary)
+    m <- get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=weights[i,], eval_fn=eval_fn)
+    metrics[[i]] <- if(isTRUE(all.equal(eval_fn, yardstick::conf_mat))) lapply(m, summary) else m
     sink()
     #if(i%%100==0) print(round(i/nrow(weights)*100))
     print(i)
