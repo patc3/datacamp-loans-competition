@@ -9,7 +9,7 @@ rm(list=ls())
 v_target <- c("not_fully_paid", "purpose")[1]
 source("loans_fn.R")
 df <- load_data(as_df = TRUE)
-df <- df %>% slice_sample(n=1000)
+df <- df %>% slice_sample(n=3000)
 str(df)
 summary(df)
 
@@ -79,6 +79,35 @@ roc$manhattan <- get_roc_curves_for_dist(tt_num, fn=stats::dist, method="manhatt
 roc$canberra <- get_roc_curves_for_dist(tt_num, fn=stats::dist, method="canberra")
 roc$binary <- get_roc_curves_for_dist(tt_num, fn=stats::dist, method="binary")
 roc$minkowski <- get_roc_curves_for_dist(tt_num, fn=stats::dist, method="minkowski")
+
+
+
+# roc curves to plot in single graph
+roc <- list()
+roc$gower <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, eval_fn = yardstick::roc_curve)
+roc$gower_best <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max, eval_fn = yardstick::roc_curve)
+roc$gower_manual <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_manual, eval_fn = yardstick::roc_curve)
+
+# make factor into dummy for other distances (e.g. euclidian for kNN)
+if(!is.factor(tt$train[,v_target])) tt_num <- lapply(tt, make_factors_into_dummies) else tt_num <- tt
+roc$euclidian <- get_metrics_with_dist(tt_num, fn=stats::dist, method="euclidian", eval_fn = yardstick::roc_curve)
+roc$maximum <- get_metrics_with_dist(tt_num, fn=stats::dist, method="maximum", eval_fn = yardstick::roc_curve)
+roc$manhattan <- get_metrics_with_dist(tt_num, fn=stats::dist, method="manhattan", eval_fn = yardstick::roc_curve)
+roc$canberra <- get_metrics_with_dist(tt_num, fn=stats::dist, method="canberra", eval_fn = yardstick::roc_curve)
+roc$binary <- get_metrics_with_dist(tt_num, fn=stats::dist, method="binary", eval_fn = yardstick::roc_curve)
+roc$minkowski <- get_metrics_with_dist(tt_num, fn=stats::dist, method="minkowski", eval_fn = yardstick::roc_curve)
+
+# plot
+roc <- lapply(roc, \(l) l$test)  
+roc <- lapply(seq_along(roc), \(i) { roc[[i]]$model <- names(roc)[i]; roc[[i]] } ) %>% bind_rows()
+roc %>% 
+  ggplot(aes(x=1-specificity, y=sensitivity, color=model)) +
+  geom_line(size=1.5) +
+  geom_abline(slope = 1, intercept = 0, size = 0.4, linetype="dashed") +
+  coord_fixed() + # fixed aspect ratio
+  theme_gray(base_size=24)
+
+
 
 
 
