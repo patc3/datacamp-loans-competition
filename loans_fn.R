@@ -9,6 +9,7 @@ loans fn
 library(dplyr)
 library(cluster)
 library(tidymodels)
+library(vip)
 req_pckgs <- c("fastDummies", "dataPreparation")
 req_pckgs <- req_pckgs[which(!req_pckgs %in% rownames(installed.packages()))]
 if(length(req_pckgs) != 0) install.packages(req_pckgs)
@@ -392,4 +393,25 @@ get_roc_curves_in_same_plot <- function(roc_tbl)
     geom_abline(slope = 1, intercept = 0, size = 0.4, linetype="dashed") +
     coord_fixed() + # fixed aspect ratio
     theme_gray(base_size=24)
+}
+
+
+# get roc curve and variable importance from random forest
+get_rf_roc_curve <- function(tt)
+{
+  "
+  input:  tt is train-test list
+  output: list with variable importance ($var_imp) and roc curve ($roc)
+  "
+  rand_forest() %>% 
+    set_mode("classification") %>%
+    set_engine("randomForest") %>% 
+    fit(factor(not_fully_paid) ~ ., tt$train) %T>%
+    { vip(.) ->> var_imp } %>% # save variable importance
+    predict(tt$test, type="prob") %>% 
+    bind_cols(tt$test) %>% 
+    roc_curve(truth=not_fully_paid, estimate=.pred_TRUE) -> roc
+  
+  # out
+  return(list(var_imp=var_imp, roc=roc))
 }

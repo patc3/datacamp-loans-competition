@@ -131,7 +131,11 @@ get_metrics_with_dist(tt_num, fn=stats::dist, method="euclidian", eval_fn=yardst
 
 
 #### as feature(s) in random forest (i.e. feature engineering) ####
+#### do ROC curve comparing w vs w/o additional features
+#tt <- lapply(tt, \(df) { as.factor(df$not_fully_paid == max(df$not_fully_paid)); df } )
+tt <- lapply(tt, \(df) { df[,v_target] <- factor(df[,v_target], levels=sort(levels(df[,v_target]), decreasing = TRUE)) ; levels(df[,v_target]) <- c("TRUE", "FALSE") ; df } )
 
-
+get_rf_roc_curve(tt)
+# var imp
 
 
