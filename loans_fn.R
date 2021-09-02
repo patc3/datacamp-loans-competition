@@ -178,8 +178,7 @@ get_metrics <- function(tt, eval_fn=yardstick::conf_mat, ...)
   
   # eval fn & estimate var
   if(is.null(eval_fn)) eval_fn <- yardstick::conf_mat
-  if(isTRUE(all.equal(eval_fn, yardstick::conf_mat))) nn_var <- "nn"
-  if(isTRUE(all.equal(eval_fn, yardstick::roc_auc))) nn_var <- "nn_p"
+  if(isTRUE(all.equal(eval_fn, yardstick::conf_mat))) nn_var <- "nn" else nn_var <- "nn_p"
   
   
   # make target and nn factors (conf_mat only takes factors)
@@ -365,3 +364,7 @@ get_roc_curves_for_dist <- function(..., plot_hist=FALSE)
 }
 
 
+# several roc curves in same graph
+# need the table roc curve table
+# x=1-specificity, y=sensitivity, color=model
+# https://sydykova.com/post/2019-03-12-make-roc-curves-tidyverse/
