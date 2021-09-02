@@ -133,9 +133,11 @@ get_metrics_with_dist(tt_num, fn=stats::dist, method="euclidian", eval_fn=yardst
 #### as feature(s) in random forest (i.e. feature engineering) ####
 #### do ROC curve comparing w vs w/o additional features
 #tt <- lapply(tt, \(df) { as.factor(df$not_fully_paid == max(df$not_fully_paid)); df } )
-tt <- lapply(tt, \(df) { df[,v_target] <- factor(df[,v_target], levels=sort(levels(df[,v_target]), decreasing = TRUE)) ; levels(df[,v_target]) <- c("TRUE", "FALSE") ; df } )
 
-get_rf_roc_curve(tt)
+rf_no_neighbor <- get_rf_roc_curve(tt)
 # var imp
 
-
+# with gower
+tt_gower <- add_neighbor_target_from_dist_matrix(tt, dist = get_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max), p_add = FALSE)
+rf_gower <- get_rf_roc_curve(tt_gower)
+get_roc_curves_from_random_forests(list(no_neighbor=rf_no_neighbor, gower=rf_gower))

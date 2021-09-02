@@ -420,3 +420,12 @@ get_rf_roc_curve <- function(tt)
   # out
   return(list(var_imp=var_imp, roc=roc))
 }
+
+# get plots for several random forests
+get_roc_curves_from_random_forests <- function(rf_list)
+{
+  rf_list <- lapply(seq_along(rf_list), \(i) { rf_list[[i]]$roc$model <- names(rf_list)[i]; rf_list[[i]]$roc } )
+  rf_list %>% 
+    bind_rows() %>% 
+    get_roc_curves_in_same_plot()
+}
