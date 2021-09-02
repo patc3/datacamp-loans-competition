@@ -1,0 +1,14 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Header
+
+In this publication we will visit:
+
+* comparing nearest neighbor methods
+* optimizing variable weights in Gower
+* creating custom functions and use pipelines instead of scripting
+
+
