@@ -403,6 +403,11 @@ get_rf_roc_curve <- function(tt)
   input:  tt is train-test list
   output: list with variable importance ($var_imp) and roc curve ($roc)
   "
+  
+  # make levels TRUE or FALSE
+  tt <- lapply(tt, \(df) { df[,v_target] <- factor(df[,v_target], levels=sort(unique(df[,v_target]), decreasing = TRUE)) ; levels(df[,v_target]) <- c("TRUE", "FALSE") ; df } )
+  
+  # Random Forest with var imp. and ROC curve
   rand_forest() %>% 
     set_mode("classification") %>%
     set_engine("randomForest") %>% 
