@@ -368,3 +368,28 @@ get_roc_curves_for_dist <- function(..., plot_hist=FALSE)
 # need the table roc curve table
 # x=1-specificity, y=sensitivity, color=model
 # https://sydykova.com/post/2019-03-12-make-roc-curves-tidyverse/
+
+make_list_of_roc_curves_into_single_table <- function(roc)
+{
+  "
+  input:  roc list (one per distance)
+  output: single table of roc curves with added model column
+  "
+  roc <- lapply(roc, \(l) l$test)  
+  roc <- lapply(seq_along(roc), \(i) { roc[[i]]$model <- names(roc)[i]; roc[[i]] } ) %>% bind_rows()
+  return(roc)
+}
+
+get_roc_curves_in_same_plot <- function(roc_tbl)
+{
+  "
+  input:  roc_tbl is single table with yardstick::roc_curve and bind_rows() with added model column
+  output: prints plot
+  "
+  roc_tbl %>% 
+    ggplot(aes(x=1-specificity, y=sensitivity, color=model)) +
+    geom_line(size=1.5) +
+    geom_abline(slope = 1, intercept = 0, size = 0.4, linetype="dashed") +
+    coord_fixed() + # fixed aspect ratio
+    theme_gray(base_size=24)
+}

@@ -23,9 +23,9 @@ summary(df)
 df <- cast(df, type_from="character", type_to="factor") # purpose is a factor
 
 # tt
-tt <- ttsplit(df, .7)
+tt <- ttsplit(df, .5)
 # tv (to choose gower weights)
-tv <- ttsplit(tt$train, .7)
+tv <- ttsplit(tt$train, .5)
 
 # scale
 tt <- scale_numeric_features_in_train_and_test(tt)
@@ -82,7 +82,9 @@ roc$minkowski <- get_roc_curves_for_dist(tt_num, fn=stats::dist, method="minkows
 
 
 
-# roc curves to plot in single graph
+
+#### roc curves to plot in single graph ####
+
 roc <- list()
 roc$gower <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, eval_fn = yardstick::roc_curve)
 roc$gower_best <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max, eval_fn = yardstick::roc_curve)
@@ -98,14 +100,10 @@ roc$binary <- get_metrics_with_dist(tt_num, fn=stats::dist, method="binary", eva
 roc$minkowski <- get_metrics_with_dist(tt_num, fn=stats::dist, method="minkowski", eval_fn = yardstick::roc_curve)
 
 # plot
-roc <- lapply(roc, \(l) l$test)  
-roc <- lapply(seq_along(roc), \(i) { roc[[i]]$model <- names(roc)[i]; roc[[i]] } ) %>% bind_rows()
-roc %>% 
-  ggplot(aes(x=1-specificity, y=sensitivity, color=model)) +
-  geom_line(size=1.5) +
-  geom_abline(slope = 1, intercept = 0, size = 0.4, linetype="dashed") +
-  coord_fixed() + # fixed aspect ratio
-  theme_gray(base_size=24)
+roc <- make_list_of_roc_curves_into_single_table(roc)
+get_roc_curves_in_same_plot(roc)
+get_roc_curves_in_same_plot(roc %>% filter(model %in% c("gower", "gower_best")))
+
 
 
 
@@ -129,6 +127,10 @@ get_metrics_with_dist(tt_num, fn=stats::dist, method="minkowski")
 get_metrics_with_dist(tt_num, fn=stats::dist, method="euclidian", eval_fn=yardstick::conf_mat)
 
 
+
+
+
+#### as feature(s) in random forest (i.e. feature engineering) ####
 
 
 
