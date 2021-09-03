@@ -305,7 +305,7 @@ make_list_of_roc_curves_into_single_table <- function(roc)
   output: single table of roc curves with added model column
   "
   roc <- lapply(roc, \(l) l$test)  
-  roc <- lapply(seq_along(roc), \(i) { roc[[i]]$model <- names(roc)[i]; roc[[i]] } ) %>% bind_rows()
+  roc <- lapply(seq_along(roc), \(i) { roc[[i]]$Model <- names(roc)[i]; roc[[i]] } ) %>% bind_rows()
   return(roc)
 }
 
@@ -316,7 +316,7 @@ get_roc_curves_in_same_plot <- function(roc_tbl)
   output: prints plot
   "
   roc_tbl %>% 
-    ggplot(aes(x=1-specificity, y=sensitivity, color=model)) +
+    ggplot(aes(x=1-specificity, y=sensitivity, color=Model)) +
     geom_line(size=1.5) +
     geom_abline(slope = 1, intercept = 0, size = 0.4, linetype="dashed") +
     coord_fixed() + # fixed aspect ratio
@@ -353,7 +353,7 @@ get_rf_roc_curve <- function(tt)
 # get plots for several random forests
 get_roc_curves_from_random_forests <- function(rf_list)
 {
-  rf_list <- lapply(seq_along(rf_list), \(i) { rf_list[[i]]$roc$model <- names(rf_list)[i]; rf_list[[i]]$roc } )
+  rf_list <- lapply(seq_along(rf_list), \(i) { rf_list[[i]]$roc$Model <- names(rf_list)[i]; rf_list[[i]]$roc } )
   rf_list %>% 
     bind_rows() %>% 
     get_roc_curves_in_same_plot()
