@@ -88,4 +88,4 @@ tt_gower <- add_neighbor_target_from_dist_matrix(
 (rf_gower <- get_rf_roc_curve(tt_gower))
 
 # compare
-get_roc_curves_from_random_forests(list(`No Neighbor`=rf_no_neighbor, Gower=rf_gower))
+get_roc_curves_from_random_forests(list(`No Neighbor`=rf_no_neighbor, `Gower (Optimized Weights)`=rf_gower))
