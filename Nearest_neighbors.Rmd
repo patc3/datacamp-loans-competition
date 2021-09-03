@@ -50,14 +50,17 @@ The improvement with this dataset and this target (`not_fully_paid`: whether the
 
 ## Load the Data
 
-```{r}
+```{r echo=TRUE, results='hide'}
 v_target <- "not_fully_paid" # set target
 source("loans_fn.R") # load custom functions to use in pipeline
 df <- load_data(as_df = TRUE)
 df <- df %>% slice_sample(n=3000) # to reduce computations in Workspace
-str(df)
-summary(df)
+```
+Before we start, we can inspect the data to know what we're dealing with.
+
+```{r}
 head(df)
+psych::describe(df)
 ```
 
 ## Prepare the Data
@@ -71,7 +74,7 @@ df <- cast(df, type_from="character", type_to="factor") # purpose is a factor
 
 Next we split the dataset into a training and test set. We do this so that we can pick a nearest neighbor from the training set (which will be available in production at prediction time) and retrieve each neighbor's target value. This value will be added as a new column in the dataset and can be used as is to predict, or even better, be used as an additional feature in a predictive model (i.e., feature engineering).
 
-Unexpectedly, we further split the training set into a training and a validation set. We will use this training set to find neighbors using different weights when computing Gower distances, and estimate the weights' performance on the validation set. We can then use these sets of optimized weights on our training set to derive neighbors on the test set. In other words, we treat the weights for each variable as hyperparameters to be tuned when computing Gower distances.
+Unexpectedly, we further split the training set into a training and a validation set. We will use this training set to find neighbors using different weights when computing Gower distances, and estimate the weights' performance on the validation set. We can then use these sets of optimized weights on our training set to derive neighbors on the test set. In other words, in this publication, we treat the weights for each variable as hyperparameters to be tuned when computing Gower distances.
 
 
 ```{r}
@@ -105,7 +108,7 @@ For a numerical variable, the distance is scaled by taking account the range of 
 
 The final distance between two observations is the average distance across variables, weighted by the variables' weights. Typically the weights are equal (and they are by default), so that each variable contributes equally to the distance. However, one possibility is to optimize those weights to increase the predictive power of the nearest neighbor feature.
 
-Note that with Gower, missing data are not a problem: They are simply ignored when computing the average distance across variables. For example, if the distance between two observations would normally be based on 10 variables but one observation has a variable missing, then the distance for this pair will be based on 9 variables. The dataset used in this publication does not have missing data, but **if your dataset has missing data, Gower is an ideal choice for computing distances**.
+Note that with Gower, missing data are not a problem: They are simply ignored when computing the average distance across variables. For example, if the distance between two observations would normally be based on 10 variables but one observation has a variable missing, then the distance for this pair will be based on 9 variables. The dataset used in this publication does not have missing data, but **if your dataset has missing data and/or mixed data types, Gower is an ideal choice for computing distances**.
 
 ### Evaluating Random Combinations of Variables
 
@@ -113,7 +116,8 @@ To choose an optimal set of weights, we use an efficient, non-exhaustive (approx
 
 Next we evaluate the performance of each combination of weights. For example, we could look at the match between actual target and the neighbor's target (i.e., accuracy). Given that the classes are imbalanced here, a better choice is either AUC or ROC curve (among others). Another good possibility is to look at the confusion matrices, to take into account both false positives and false negatives. 
 
-Here we'll choose the best set of weights based on AUC. This is a good choice here, but it comes with an added difficulty: We need to transforming distances into approximate probabilities! Unlike confusion matrices, AUC (and ROC curves more generally) require soft classification (probabilities of belonging to the target category)rather than hard classification (a predicted category). I tried and compared several methods to achieve this here, and found that the best method was to normalize the distances and bring them to a 0-1 range:   
+Here we'll choose the best set of weights based on AUC. This is a good choice here, but it comes with an added difficulty: We need to transform distances into approximate probabilities! Unlike confusion matrices, AUC (and ROC curves more generally) require soft classification (probabilities of belonging to the target category) rather than hard classification (a predicted category). I tried and compared several methods to achieve this here, and found that the best method was to normalize the distances and bring them to a 0-1 range:   
+
 $prob(dist) = (dist - min(distances)) / (max(distances) - min(distances))$
 
 I've also tried to normalize the log of distances, as well as the logistic function, and the logistic of the log distances. The logistic function applied to distances was the most natural one but it consistently yielded lower AUCs than simple normalization, while the logistic of log distances was equivalent to normalization.
@@ -136,25 +140,29 @@ Next we can compare different methods to calculate the distances used to find ne
 
 ```{r echo=TRUE, results='hide'}
 #### compare nearest-neighbors methods with ROC curves ####
-
 roc <- list()
-roc$gower <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, eval_fn = yardstick::roc_curve)
-roc$gower_best <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max, eval_fn = yardstick::roc_curve)
-roc$gower_manual <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_manual, eval_fn = yardstick::roc_curve)
+
+# Gower distances
+roc$Gower <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, eval_fn = yardstick::roc_curve)
+roc$`Gower (Optimized Weights)` <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max, eval_fn = yardstick::roc_curve)
+roc$`Gower (Manual Weights)` <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_manual, eval_fn = yardstick::roc_curve)
 
 # make factor into dummy for numeric distances (e.g. euclidian for kNN)
 if(!is.factor(tt$train[,v_target])) tt_num <- lapply(tt, make_factors_into_dummies) else tt_num <- tt
-roc$euclidian <- get_metrics_with_dist(tt_num, fn=stats::dist, method="euclidian", eval_fn = yardstick::roc_curve)
-roc$maximum <- get_metrics_with_dist(tt_num, fn=stats::dist, method="maximum", eval_fn = yardstick::roc_curve)
-roc$manhattan <- get_metrics_with_dist(tt_num, fn=stats::dist, method="manhattan", eval_fn = yardstick::roc_curve)
-roc$canberra <- get_metrics_with_dist(tt_num, fn=stats::dist, method="canberra", eval_fn = yardstick::roc_curve)
-roc$binary <- get_metrics_with_dist(tt_num, fn=stats::dist, method="binary", eval_fn = yardstick::roc_curve)
-roc$minkowski <- get_metrics_with_dist(tt_num, fn=stats::dist, method="minkowski", eval_fn = yardstick::roc_curve)
+
+# numeric distances
+roc$Euclidian <- get_metrics_with_dist(tt_num, fn=stats::dist, method="euclidian", eval_fn = yardstick::roc_curve)
+roc$Maximum <- get_metrics_with_dist(tt_num, fn=stats::dist, method="maximum", eval_fn = yardstick::roc_curve)
+roc$Manhattan <- get_metrics_with_dist(tt_num, fn=stats::dist, method="manhattan", eval_fn = yardstick::roc_curve)
+roc$Canberra <- get_metrics_with_dist(tt_num, fn=stats::dist, method="canberra", eval_fn = yardstick::roc_curve)
+roc$Binary <- get_metrics_with_dist(tt_num, fn=stats::dist, method="binary", eval_fn = yardstick::roc_curve)
+roc$Minkowski <- get_metrics_with_dist(tt_num, fn=stats::dist, method="minkowski", eval_fn = yardstick::roc_curve)
 
 ```
 Now we have a list of ROC curves for train and test sets for each distance. For example, here's the result for the Gower distances with optimized weights:
+
 ```{r}
-roc$gower_best
+roc$`Gower (Optimized Weights`
 ```
 
 We can plot these ROC curves in the test set separately for each method. This gives us a quick visual idea of which distances work best with our dataset.
@@ -163,9 +171,13 @@ We can plot these ROC curves in the test set separately for each method. This gi
 # plot
 roc <- make_list_of_roc_curves_into_single_table(roc)
 get_roc_curves_in_same_plot(roc) # comparing all methods
-get_roc_curves_in_same_plot(roc %>% filter(model %in% c("gower", "gower_best"))) # comparing Gower methods
+get_roc_curves_in_same_plot(roc %>% filter(Model %in% c("Gower", "Gower (Optimized Weights)"))) # comparing Gower methods
 
 ```
+Methods with a quicker rise ("to the top and left") have a better tradeoff between false positives and negatives (as represented by a larger AUC, literally the area under that curve). In this example, some methods perform better than others, with some numeric distances (like the binary distance) not yielding adequate performance with our data.
+
+Also, it looks like the Gower distances with optimized weights might be preferable to the vanilla Gower with all variables weighted equally at certain thresholds. On the other hand, the weights that we've manually chosen did not work well at all! In the absence of a business context to weight some variables more heavily than others, it could be better to leave the choice of weights to the optimization routine.
+
 
 ## Comparing a Random Forest With and Without Nearest Neighbor Features
 
@@ -191,7 +203,7 @@ get_roc_curves_from_random_forests(list(`No Neighbor`=rf_no_neighbor, Gower=rf_g
 ```
 
 
-In this particular case, with no hyperparameter tuning in the random forests, the addition of a Gower neighbor with optimized weights yielded similar results to the random forest witout feature engineering. Looking at variable importances, it looks like `nn_p`, namely the Gower distance that we transformed into an approximate probability earlier, became one of the strongest predictors of the target in this dataset:
+In this particular case, with no hyperparameter tuning in the random forests, the addition of a Gower neighbor with optimized weights yielded similar results to the random forest without feature engineering. Looking at variable importances, it looks like `nn_p`, namely the Gower distance that we transformed into an approximate probability earlier, became one of the strongest predictors of the target in this dataset:
 
 ```{r}
 # Random Forest without neighbors
