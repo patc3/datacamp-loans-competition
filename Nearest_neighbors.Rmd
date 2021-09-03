@@ -10,23 +10,6 @@ output:
 knitr::opts_chunk$set(echo = TRUE, fig.align='center', warning = FALSE)
 ```
 
-"
-
-interpret graph les deux RF
-key takeaways
-future R
-recommandations cours datacamp tree based models; workspace pipes
-
-
-ADD TABLE OF CONTENT IN FIRST SECTION WHEN IM DONE
-
-ajouter github a la fin
-
-"
-
-
-
-
 # Optimizing Gower Weights in Feature Engineering (And Other Nearest-Neighbor Stories)
 **By Patrick Coulombe, PhD (patrick.coulombe@d22consulting.com)**  
 **Last updated `r format(Sys.time(), '%B %d, %Y')`**
@@ -38,14 +21,40 @@ In this publication we will:
 * Compare nearest-neighbor methods for predicting a target in a test set
 * Optimize variable weights when using Gower distances
 * Compare predictive models with and without engineering a new nearest-neighbor feature
-* Create custom, re-usable functions and use pipelines instead of scripting, as is typical in R
+* Create custom, re-usable functions and use pipelines instead of scripting, as is more typical in R
 
-The improvement with this dataset and this target (`not_fully_paid`: whether the loan is paid or not) is small, but I have applied this method in other contexts with great improvements in predictive performance. In particular, multiclass classification with a large number of classes seems to benefit from this approach.
+The improvement with this dataset and this target (`not_fully_paid`: whether the loan is paid or not) is small, but messier data could see bigger gains in predictive performance. In particular, multiclass classification with a large number of classes (and missing data in features) is likely to benefit from this approach.
 
 **Don't forget to read the Key Takeaways section before you leave!**
 
+# Table of Contents
+
+1. Description of the Method  
+2. Load the Data  
+3. Prepare the Data  
+4. Optimizing Variable Weights in Gower Distances  
+  4.1. Gower Distance  
+  4.2. Evaluating Random Combinations of Variables  
+5. Comparing Methods for Calculating Distances and Finding Neighbors    
+6. Comparing a Random Forest With and Without Nearest Neighbor Features  
+7. Key Takeaways  
+8. Future Improvements  
+9. DataCamp Resources  
+10. Code Repository  
+  10.1. Pipeline (`loans_pip.R`)    
+  10.2. Custom Functions (`loans_fn.R`)  
+
+
 
 ## Description of the Method
+
+In this publication, I develop and test a methodology to create a new feature in a predictive model (so-called *feature engineering*). This new feature is a nearest neighbor's (similar observation) value on the target variable. In particular:
+
+1. I use distances to compare observations from the training and test sets
+2. I then pick the most similar observation (i.e., the neighbor) in the training set for each observation in the training and test set
+3. I put the neighbor's target value in a new column
+
+I investigate several ways to calculate distances, chief of which is the Gower method, capable of handling mixed data types (categorical and numerical features) and missing data. One particularity with the Gower method is that variables can be weighted differently when computing distances. An interesting novelty in this publication is that I examine the possibility of optimizing the choice of weights for each variable to maximize predictive performance on a validation set, and I show the performance of this methodology on an unseen test set.
 
 
 ## Load the Data
@@ -162,7 +171,7 @@ roc$Minkowski <- get_metrics_with_dist(tt_num, fn=stats::dist, method="minkowski
 Now we have a list of ROC curves for train and test sets for each distance. For example, here's the result for the Gower distances with optimized weights:
 
 ```{r}
-roc$`Gower (Optimized Weights`
+roc$`Gower (Optimized Weights)`
 ```
 
 We can plot these ROC curves in the test set separately for each method. This gives us a quick visual idea of which distances work best with our dataset.
@@ -198,7 +207,7 @@ tt_gower <- add_neighbor_target_from_dist_matrix(
 rf_gower <- get_rf_roc_curve(tt_gower)
 
 # compare
-get_roc_curves_from_random_forests(list(`No Neighbor`=rf_no_neighbor, Gower=rf_gower))
+get_roc_curves_from_random_forests(list(`No Neighbor`=rf_no_neighbor, `Gower (Optimized Weights)`=rf_gower))
 
 ```
 
@@ -217,45 +226,140 @@ rf_gower$var_imp
 
 ## Key Takeaways
 
+Here are key takeaways from this publication:
 
-
-
-
+* Most importantly, the Gower method is an ideal choice for calculating distances when your dataset has missing data and/or mixed data types (a combination of categorical and numerical variables)
+* Distances can be used to find a nearest neighbor in a training set and add that neighbor's target as a new feature in a predictive model
+* Different distance methods perform differently depending on your dataset and what you're trying to accomplish--choose wisely!
+* The addition of a variable high in importance to a predictive model does not guarantee a huge jump in evaluation metrics (e.g. if the new feature is highly related to other predictors already present)
 
 
 ## Future Improvements
 
-* several nearest neighbors and take modal target value (if numeric target: average or median)
-* optim() to find true optimized combination of weights, with continuous weights instead of dichotomous 0 or 1
-* with missing data and lots of factor levels where gower shines
-* tuning model hyperparameters (like mtry in RF) separately for RF with and without neighbor feature, so that they both are optimized for the features they do have
+There are several improvements possible to the methodology developed here. Some promising improvements are:
+
+* Find several nearest neighbors in the training set (instead of only 1) and take the modal target value among neighbors (if the target is numeric, use average or median)
+* Use `optim()` to find true optimized combination of weights, with continuous weights instead of dichotomous weights limited to 0 or 1
+* Evaluate the usefulness of this methodology with missing data and lots of factor levels in the target, which is where Gower truly shines
+* Tune model hyperparameters (like `mtry` in the random forest) separately for the models with and without neighbor features, so that both models are optimized for the features they do (or don't) have
 
 
+## DataCamp Resources
+
+To complement this publication, I recommend the course [*Machine Learning with Tree-Based Models in R* by Sandro Raabe](https://learn.datacamp.com/courses/machine-learning-with-tree-based-models-in-r). This course uses the `tidymodels` framework. I also recommend the publication [*Pipes in R Tutorial For Beginners* by Karlijn Willems](https://app.datacamp.com/workspace/w/05517144-5a4e-4f7e-8b38-824033235064)--this is a life-saver when it comes to the mysterious `%>%` pipe and its friends.
+
+![](https://i.imgur.com/RN7vNw9.png)
 
 ## Code Repository
 
-The entire code repository for this project is available on GitHub.
+The entire [code repository](https://github.com/patc3-phd/datacamp-loans-competition) for this project is available on GitHub.
 
-[![Code Repository on GitHub](https://i.imgur.com/kDrGrBN.png)](https://github.com/patc3-phd/datacamp-loans-competition)
+[![](https://i.imgur.com/kDrGrBN.png)](https://github.com/patc3-phd/datacamp-loans-competition)
 
 
 
-### Entire Pipeline ###
+### Pipeline (`loans_pip.R`) ###
 
+```{r, eval=FALSE}
+#### load & inspect data ####
+rm(list=ls())
+v_target <- "not_fully_paid" # set target
+source("loans_fn.R") # load custom functions to use in pipeline
+df <- load_data(as_df = TRUE)
+df <- df %>% slice_sample(n=3000) # to reduce computations in Workspace
+head(df)
+psych::describe(df)
+
+
+#### compare nearest-neighbors methods ####
+# data prep
+df <- cast(df, type_from="character", type_to="factor") # purpose is a factor
+
+# tt: train-test split
+tt <- ttsplit(df, prop = .7) # list with tt$train and tt$test
+# tv: train-validation split (to choose gower weights)
+tv <- ttsplit(tt$train, prop = .7)
+
+# scale
+tt <- scale_numeric_features_in_train_and_test(tt)
+tv <- scale_numeric_features_in_train_and_test(tv)
+
+
+
+
+#### gower with daisy: optimize gower weights ####
+
+# loop to optimize weights
+weights <- get_gower_weights(tv, min_vars = 3, n_combinations = 10) # generate possible combinations of 0-1 weights for each variable
+metrics <- get_gower_metrics_for_weights(tv, weights_matrix = weights, eval_fn = yardstick::roc_auc) # compute AUC for each combination of weights
+weights_max <- get_gower_best_weights(weights, metrics, choose_by=c("accuracy","mean_metric","auc")[3]) # extract best set of weights
+
+# we could also manually choose our own weights (why not?)
+weights_manual <- c(credit_policy=1, purpose=1, int_rate=0, installment=0, log_annual_inc=0, 
+                    dti=0, fico=0, days_with_cr_line=0, revol_bal=0,
+                    revol_util=0, inq_last_6mths=0, delinq_2yrs=0, pub_rec=1) %>% as.list %>% as.data.frame
+
+
+
+
+#### compare nearest-neighbors methods with ROC curves ####
+roc <- list()
+
+# Gower distances
+roc$Gower <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, eval_fn = yardstick::roc_curve)
+roc$`Gower (Optimized Weights)` <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max, eval_fn = yardstick::roc_curve)
+roc$`Gower (Manual Weights)` <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_manual, eval_fn = yardstick::roc_curve)
+
+# make factor into dummy for numeric distances (e.g. euclidian for kNN)
+if(!is.factor(tt$train[,v_target])) tt_num <- lapply(tt, make_factors_into_dummies) else tt_num <- tt
+
+# numeric distances
+roc$Euclidian <- get_metrics_with_dist(tt_num, fn=stats::dist, method="euclidian", eval_fn = yardstick::roc_curve)
+roc$Maximum <- get_metrics_with_dist(tt_num, fn=stats::dist, method="maximum", eval_fn = yardstick::roc_curve)
+roc$Manhattan <- get_metrics_with_dist(tt_num, fn=stats::dist, method="manhattan", eval_fn = yardstick::roc_curve)
+roc$Canberra <- get_metrics_with_dist(tt_num, fn=stats::dist, method="canberra", eval_fn = yardstick::roc_curve)
+roc$Binary <- get_metrics_with_dist(tt_num, fn=stats::dist, method="binary", eval_fn = yardstick::roc_curve)
+roc$Minkowski <- get_metrics_with_dist(tt_num, fn=stats::dist, method="minkowski", eval_fn = yardstick::roc_curve)
+
+# plot
+roc <- make_list_of_roc_curves_into_single_table(roc)
+get_roc_curves_in_same_plot(roc) # comparing all methods
+get_roc_curves_in_same_plot(roc %>% filter(Model %in% c("Gower", "Gower (Optimized Weights)"))) # comparing Gower methods
+
+
+
+
+#### Use nearest neighbor as feature(s) in random forest (i.e. feature engineering) ####
+#### do ROC curve comparing w vs w/o additional features
+
+# no neighbor
+(rf_no_neighbor <- get_rf_roc_curve(tt))
+
+# with gower
+tt_gower <- add_neighbor_target_from_dist_matrix(
+                        tt, 
+                        dist = get_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max), 
+                        p_add = TRUE)
+(rf_gower <- get_rf_roc_curve(tt_gower))
+
+# compare
+get_roc_curves_from_random_forests(list(`No Neighbor`=rf_no_neighbor, `Gower (Optimized Weights)`=rf_gower))
+
+```
 
 
 
 ### Custom Functions (`loans_fn.R`)
 
-```{r}
+```{r, eval=FALSE}
 #### imports ####
+req_pckgs <- c("dplyr", "cluster", "tidymodels", "vip", "psych",  "fastDummies", "dataPreparation")
+req_pckgs <- req_pckgs[which(!req_pckgs %in% rownames(installed.packages()))]
+if(length(req_pckgs) != 0) install.packages(req_pckgs)
 library(dplyr)
 library(cluster)
 library(tidymodels)
 library(vip)
-req_pckgs <- c("fastDummies", "dataPreparation")
-req_pckgs <- req_pckgs[which(!req_pckgs %in% rownames(installed.packages()))]
-if(length(req_pckgs) != 0) install.packages(req_pckgs)
 
 #### load data ####
 load_data <- function(as_df=FALSE)
@@ -548,7 +652,7 @@ make_list_of_roc_curves_into_single_table <- function(roc)
   output: single table of roc curves with added model column
   "
   roc <- lapply(roc, \(l) l$test)  
-  roc <- lapply(seq_along(roc), \(i) { roc[[i]]$model <- names(roc)[i]; roc[[i]] } ) %>% bind_rows()
+  roc <- lapply(seq_along(roc), \(i) { roc[[i]]$Model <- names(roc)[i]; roc[[i]] } ) %>% bind_rows()
   return(roc)
 }
 
@@ -559,7 +663,7 @@ get_roc_curves_in_same_plot <- function(roc_tbl)
   output: prints plot
   "
   roc_tbl %>% 
-    ggplot(aes(x=1-specificity, y=sensitivity, color=model)) +
+    ggplot(aes(x=1-specificity, y=sensitivity, color=Model)) +
     geom_line(size=1.5) +
     geom_abline(slope = 1, intercept = 0, size = 0.4, linetype="dashed") +
     coord_fixed() + # fixed aspect ratio
@@ -596,7 +700,7 @@ get_rf_roc_curve <- function(tt)
 # get plots for several random forests
 get_roc_curves_from_random_forests <- function(rf_list)
 {
-  rf_list <- lapply(seq_along(rf_list), \(i) { rf_list[[i]]$roc$model <- names(rf_list)[i]; rf_list[[i]]$roc } )
+  rf_list <- lapply(seq_along(rf_list), \(i) { rf_list[[i]]$roc$Model <- names(rf_list)[i]; rf_list[[i]]$roc } )
   rf_list %>% 
     bind_rows() %>% 
     get_roc_curves_in_same_plot()
