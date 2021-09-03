@@ -156,7 +156,6 @@ add_neighbor_target_from_dist_matrix <- function(tt, dist, p_add=TRUE, p_fn=norm
   {
     p_col <- "nn_p"
     #set p_yes to similarity (1-diss) if neighbor target is 1, or diss if neighbor is 0
-    # ???????
     min_dists <- sapply(seq_along(rownames(dist)), \(i) dist[i, ix[i]])
     ix_yes <- which(do.call(rbind, tt)[,col] %in% c(1, "1", max(tt$train[,v_target]))) # max() is because target is standardized
     min_dists[ix_yes] <- 1-min_dists[ix_yes]

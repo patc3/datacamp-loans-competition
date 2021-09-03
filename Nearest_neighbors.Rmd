@@ -1,15 +1,73 @@
 ---
-title: "Optimizing Gower Weights in Feature Engineering (And Other Nearest-Neighbor Stories)"
+title: "Placeholder"
 output: html_notebook
 ---
 
-# Header
+# Optimizing Gower Weights in Feature Engineering (And Other Nearest-Neighbor Stories)
+**By Patrick Coulombe, PhD (patrick.coulombe@d22consulting.com)**  
+**Last edited `r format(Sys.time(), '%B %d, %Y')`**
 
-In this publication we will visit:
+## Nearest Neighbors as Features
 
-* comparing nearest neighbor methods
-* optimizing variable weights in Gower
-* creating custom, re-usable functions and use pipelines instead of scripting
+In this publication we will:
+
+* Compare nearest-neighbor methods used to engineer a new feature
+* Optimize variable weights in a validation set for computing Gower distances
+* 
+* Create custom, re-usable functions and use pipelines instead of scripting, as is typical in R
+
+The improvement with this dataset and this target (`not_fully_paid`: whether the loan is paid or not) is small, but I have applied this method in other contexts with great improvements in predictive performance. In particular, multiclass classification with a large number of classes seems to benefit from this approach.
+
+
+## Description of the Method
+
+
+## Load the Data
+
+```{r}
+v_target <- "not_fully_paid"
+source("loans_fn.R")
+df <- load_data(as_df = TRUE)
+df <- df %>% slice_sample(n=3000)
+str(df)
+summary(df)
+head(df)
+```
+
+## Prepare the Data
+
+To prepare the data, we first make the `character` variable `purpose` into a `factor` for use as is when computing Gower distances, or for later dummy (one-hot) encoding for computing other distances (like Euclidian, Manhattan, etc.).
+
+```{r}
+# data prep
+df <- cast(df, type_from="character", type_to="factor") # purpose is a factor
+```
+
+Next we split the dataset into a training and test set. We do this so that we can pick a nearest neighbor from the training set (which will be available in production at prediction time) and retrieve each neighbor's target value. This value will be added as a new column in the dataset and can be used as is to predict, or even better, be used as an additional feature in a predictive model (i.e., feature engineering).
+
+Unexpectedly, we further split the training set into a training and a validation set. We will use this training set to find neighbors using different weights when computing Gower distances. 
+
+
+```{r}
+# tt
+tt <- ttsplit(df, .7)
+# tv (to choose gower weights)
+tv <- ttsplit(tt$train, .7)
+
+# scale
+tt <- scale_numeric_features_in_train_and_test(tt)
+tv <- scale_numeric_features_in_train_and_test(tv)
+
+```
+
+
+
+### Entire Pipeline ###
+
+
+
+
+### Custom Functions (`loans_fn.R`)
 
 
 
