@@ -134,10 +134,12 @@ get_metrics_with_dist(tt_num, fn=stats::dist, method="euclidian", eval_fn=yardst
 #### do ROC curve comparing w vs w/o additional features
 #tt <- lapply(tt, \(df) { as.factor(df$not_fully_paid == max(df$not_fully_paid)); df } )
 
+# no neighbor
 rf_no_neighbor <- get_rf_roc_curve(tt)
-# var imp
 
 # with gower
 tt_gower <- add_neighbor_target_from_dist_matrix(tt, dist = get_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max), p_add = FALSE)
 rf_gower <- get_rf_roc_curve(tt_gower)
+
+# compare
 get_roc_curves_from_random_forests(list(no_neighbor=rf_no_neighbor, gower=rf_gower))

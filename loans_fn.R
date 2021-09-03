@@ -415,11 +415,12 @@ get_rf_roc_curve <- function(tt)
     fit(factor(not_fully_paid) ~ ., tt$train) %T>%
     { vip(.) ->> var_imp } %>% # save variable importance
     predict(tt$test, type="prob") %>% 
-    bind_cols(tt$test) %>% 
-    roc_curve(truth=not_fully_paid, estimate=.pred_TRUE) -> roc
+    bind_cols(tt$test) %T>% 
+    { roc_curve(., truth=not_fully_paid, estimate=.pred_TRUE) ->> roc } %>% # save ROC curve
+    roc_auc(truth=not_fully_paid, estimate=.pred_TRUE) -> auc # save AUC
   
   # out
-  return(list(var_imp=var_imp, roc=roc))
+  return(list(var_imp=var_imp, roc=roc, auc=auc))
 }
 
 # get plots for several random forests
