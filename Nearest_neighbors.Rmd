@@ -5,7 +5,7 @@ output: html_notebook
 
 # Optimizing Gower Weights in Feature Engineering (And Other Nearest-Neighbor Stories)
 **By Patrick Coulombe, PhD (patrick.coulombe@d22consulting.com)**  
-**Last edited `r format(Sys.time(), '%B %d, %Y')`**
+**Last updated `r format(Sys.time(), '%B %d, %Y')`**
 
 ## Nearest Neighbors as Features
 
@@ -18,6 +18,8 @@ In this publication we will:
 
 The improvement with this dataset and this target (`not_fully_paid`: whether the loan is paid or not) is small, but I have applied this method in other contexts with great improvements in predictive performance. In particular, multiclass classification with a large number of classes seems to benefit from this approach.
 
+**Don't forget to read the Key Takeaways section before you leave!**
+
 
 ## Description of the Method
 
@@ -25,10 +27,10 @@ The improvement with this dataset and this target (`not_fully_paid`: whether the
 ## Load the Data
 
 ```{r}
-v_target <- "not_fully_paid"
-source("loans_fn.R")
+v_target <- "not_fully_paid" # set target
+source("loans_fn.R") # load custom functions to use in pipeline
 df <- load_data(as_df = TRUE)
-df <- df %>% slice_sample(n=3000)
+df <- df %>% slice_sample(n=3000) # to reduce computations in Workspace
 str(df)
 summary(df)
 head(df)
@@ -45,20 +47,91 @@ df <- cast(df, type_from="character", type_to="factor") # purpose is a factor
 
 Next we split the dataset into a training and test set. We do this so that we can pick a nearest neighbor from the training set (which will be available in production at prediction time) and retrieve each neighbor's target value. This value will be added as a new column in the dataset and can be used as is to predict, or even better, be used as an additional feature in a predictive model (i.e., feature engineering).
 
-Unexpectedly, we further split the training set into a training and a validation set. We will use this training set to find neighbors using different weights when computing Gower distances. 
+Unexpectedly, we further split the training set into a training and a validation set. We will use this training set to find neighbors using different weights when computing Gower distances, and estimate the weights' performance on the validation set. We can then use these sets of optimized weights on our training set to derive neighbors on the test set. In other words, we treat the weights for each variable as hyperparameters to be tuned when computing Gower distances.
 
 
 ```{r}
-# tt
-tt <- ttsplit(df, .7)
-# tv (to choose gower weights)
-tv <- ttsplit(tt$train, .7)
+# tt: train-test split
+tt <- ttsplit(df, prop = .7) # list with tt$train and tt$test
+# tv: train-validation split (to choose gower weights)
+tv <- ttsplit(tt$train, prop = .7)
+```
 
+We then scale the numerical predictors in both the training and test sets using the mean and standard deviations *in the training set*, to avoid any target leakage (better safe than sorry!).
+
+```{r}
 # scale
 tt <- scale_numeric_features_in_train_and_test(tt)
 tv <- scale_numeric_features_in_train_and_test(tv)
+```
+
+
+
+## Optimizing Variable Weights in Gower Distances
+
+### Gower Distance
+
+A powerful yet lesser known method for computing distances between observations in the Gower distance. Originally published in 1971 and developed to compare text, the Gower distance between two observations is **the (weighted) average difference between the two observations on selected variables**.
+
+For a categorical variable, the distance between two observations is 1 (the maximum) when the observations don't belong to the same category, and the distance is 0 (the minimum) when the observations belong to the same category.
+
+For a numerical variable, the distance is scaled by taking account the range of possible values for that variable. For example, if Person #1 has a score of 5, Person #2 has a score of 7, and the min and max in the dataset are 1 and 7 (a Likert scale), then the distance is `abs(5-7)/(7-1)`, or 0.33.
+
+The final distance between two observations is the average distance across variables, weighted by the variables' weights. Typically the weights are equal (and they are by default), so that each variable contributes equally to the distance. However, one possibility is to optimize those weights to increase the predictive power of the nearest neighbor feature.
+
+Note that with Gower, missing data are not a problem: They are simply ignored when computing the average distance across variables. For example, if the distance between two observations would normally be based on 10 variables but one observation has a variable missing, then the distance for this pair will be based on 9 variables. The dataset used in this publication does not have missing data, but **if your dataset has missing data, Gower is an ideal choice for computing distances**.
+
+### Evaluating Random Combinations of Variables
+
+To choose an optimal set of weights, we use an efficient, non-exhaustive (approximate) approach. For each run, we select variables at random to be used in the computation of distances (by setting their weight to 0 or 1 randomly). For each combination, we find the nearest neighbor (most similar observation) in the training set for each person in the validation set, and we assign that neighbor's target to a new feature in the validation set. This is in effect our best guess as to what the validation target is, based on the similarity of the training set.
+
+Next we evaluate the performance of each combination of weights. For example, we could look at the match between actual target and the neighbor's target (i.e., accuracy). Given that the classes are imbalanced here, a better choice is either AUC or ROC curve (among others). Another good possibility is to look at the confusion matrices, to take into account both false positives and false negatives. 
+
+Here we'll choose the best set of weights based on AUC.
+
+```{r}
+# loop to optimize weights
+weights <- get_gower_weights(tv, min_vars = 3, n_combinations = 10) # generate possible combinations of 0-1 weights for each variable
+metrics <- get_gower_metrics_for_weights(tv, weights_matrix = weights, eval_fn = yardstick::roc_auc) # compute AUC for each combination of weights
+weights_max <- get_gower_best_weights(weights, metrics, choose_by=c("accuracy","mean_metric","auc")[3]) # extract best set of weights
+
+# we could also manually choose our own weights (why not?)
+weights_manual <- c(credit_policy=1, purpose=1, int_rate=0, installment=0, log_annual_inc=0, 
+                    dti=0, fico=0, days_with_cr_line=0, revol_bal=0,
+                    revol_util=0, inq_last_6mths=0, delinq_2yrs=0, pub_rec=1) %>% as.list %>% as.data.frame
+```
+
+
+
+
+```{r}
+#### compare nearest-neighbors methods with ROC curves ####
+
+roc <- list()
+roc$gower <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, eval_fn = yardstick::roc_curve)
+roc$gower_best <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max, eval_fn = yardstick::roc_curve)
+roc$gower_manual <- get_metrics_with_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_manual, eval_fn = yardstick::roc_curve)
+
+# make factor into dummy for numeric distances (e.g. euclidian for kNN)
+if(!is.factor(tt$train[,v_target])) tt_num <- lapply(tt, make_factors_into_dummies) else tt_num <- tt
+roc$euclidian <- get_metrics_with_dist(tt_num, fn=stats::dist, method="euclidian", eval_fn = yardstick::roc_curve)
+roc$maximum <- get_metrics_with_dist(tt_num, fn=stats::dist, method="maximum", eval_fn = yardstick::roc_curve)
+roc$manhattan <- get_metrics_with_dist(tt_num, fn=stats::dist, method="manhattan", eval_fn = yardstick::roc_curve)
+roc$canberra <- get_metrics_with_dist(tt_num, fn=stats::dist, method="canberra", eval_fn = yardstick::roc_curve)
+roc$binary <- get_metrics_with_dist(tt_num, fn=stats::dist, method="binary", eval_fn = yardstick::roc_curve)
+roc$minkowski <- get_metrics_with_dist(tt_num, fn=stats::dist, method="minkowski", eval_fn = yardstick::roc_curve)
+
+# plot
+roc <- make_list_of_roc_curves_into_single_table(roc)
+get_roc_curves_in_same_plot(roc)
+get_roc_curves_in_same_plot(roc %>% filter(model %in% c("gower", "gower_best")))
 
 ```
+
+
+
+## Key Takeaways
+
 
 
 
