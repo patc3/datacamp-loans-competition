@@ -75,14 +75,14 @@ get_roc_curves_in_same_plot(roc %>% filter(model %in% c("gower", "gower_best")))
 #### do ROC curve comparing w vs w/o additional features
 
 # no neighbor
-rf_no_neighbor <- get_rf_roc_curve(tt)
+(rf_no_neighbor <- get_rf_roc_curve(tt))
 
 # with gower
 tt_gower <- add_neighbor_target_from_dist_matrix(
                         tt, 
                         dist = get_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max), 
                         p_add = TRUE)
-rf_gower <- get_rf_roc_curve(tt_gower)
+(rf_gower <- get_rf_roc_curve(tt_gower))
 
 # compare
 get_roc_curves_from_random_forests(list(no_neighbor=rf_no_neighbor, gower=rf_gower))
