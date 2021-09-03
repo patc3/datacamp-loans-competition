@@ -178,23 +178,13 @@ get_metrics <- function(tt, eval_fn=yardstick::conf_mat, ...)
   
   # top level comes first (for AUC)
   tt <- lapply(tt, \(df) { df[,v_target] <- factor(df[,v_target], levels=sort(levels(df[,v_target]), decreasing = TRUE)) ; df } )
-  #tt <- lapply(tt, \(df) { df[,v_target] <- factor(df[,v_target], labels=paste0("Cat",0:(length(unique(df[,v_target]))-1))); df } )
-  # tt_p$test$not_fully_paid[which(x==min(x))] <- 0
-  # tt_p$test$not_fully_paid[which(x==max(x))] <- 1
-  # tt_p$test$not_fully_paid <- factor(tt_p$test$not_fully_paid, levels=c("1","0"), labels=c("Yes", "No")) # ensure first level is positive class
-  
+
   # make sure nn and v_target have the same factor levels
   if(nn_var=="nn") tt <- lapply(tt, \(df){ df[,nn_var] <- factor(df[,nn_var], levels=levels(tt$train[,v_target])); df })
   
     # nn_p is numeric
   if(nn_var=="nn_p") tt <- lapply(tt, \(df) { df[,nn_var] <- as.numeric(as.character(df[,nn_var])) ; df } ) # sloppy: goes from num to factor to num
-
-  
-  # change to string levels
-  #tt <- lapply(tt, \(df) { df[,v_target] <- factor(df[,v_target], labels=paste0("Cat",0:(length(unique(df[,v_target]))-1))); df } )
-  #if(nn_var=="nn") tt <- lapply(tt, \(df) { df[,nn_var] <- factor(df[,nn_var], labels=paste0("Cat",0:(length(unique(df[,v_target]))-1))); df } ) # labels might be reversed :( sloppy, but will show in AUC<<.5
-  
-  
+ 
   # get metrics
   metrics <- list(
     train=eval_fn(tt$train, truth=!!v_target, estimate=!!nn_var),
@@ -257,8 +247,6 @@ get_gower_metrics_for_weights <- function(tt, weights_matrix=NULL, eval_fn=yards
     m <- get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=weights[i,], eval_fn=eval_fn)
     metrics[[i]] <- if(isTRUE(all.equal(eval_fn, yardstick::conf_mat))) lapply(m, summary) else m
     sink()
-    #if(i%%100==0) print(round(i/nrow(weights)*100))
-    print(i)
   }
   
   # out
@@ -274,18 +262,11 @@ get_gower_best_weights <- function(weights, metrics, choose_by=c("accuracy", "me
           metrics is metrics list (from get_gower_metrics_for_weights())
   output: matrix with 1 row (best weights)
   "
-  # post: test only
-  #acc <- sapply(metrics, \(m) m$test %>% filter(.metric=="accuracy") %>% pull(.estimate))
-  #acc[which(sapply(metrics, \(m) any(is.na(m$test$.estimate))))] <- NA # remove only one prediction
-  
   if (choose_by == "accuracy")
   {
     # avg train and test because all high values in test seem more normal in train
     acc_tt <- sapply(metrics, \(m) mean(sapply(m, \(tbl) tbl %>% filter(.metric=="accuracy") %>% pull(.estimate))))
     acc_tt[which(sapply(metrics, \(m) any(sapply(m, \(tbl) any(is.na(tbl$.estimate))))))] <- NA # remove only one prediction
-    #summary(acc_tt)
-    #hist(acc_tt)
-    #sapply(weights[which(acc_tt>.78),], sum) # to find which vars are most and least common in this good lot
   }
   
   if (choose_by == "mean_metric")
@@ -305,7 +286,6 @@ get_gower_best_weights <- function(weights, metrics, choose_by=c("accuracy", "me
   # ie should do tv (train valid) then tt
   # choose weights and run with tt to get test metrics
   weights_max <- weights[which.max(acc_tt),]
-  # (credit_policy), purpose, pub_rec
   
   # out
   return(weights_max)
