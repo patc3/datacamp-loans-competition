@@ -23,9 +23,9 @@ summary(df)
 df <- cast(df, type_from="character", type_to="factor") # purpose is a factor
 
 # tt
-tt <- ttsplit(df, .5)
+tt <- ttsplit(df, .7)
 # tv (to choose gower weights)
-tv <- ttsplit(tt$train, .5)
+tv <- ttsplit(tt$train, .7)
 
 # scale
 tt <- scale_numeric_features_in_train_and_test(tt)
@@ -37,7 +37,7 @@ tv <- scale_numeric_features_in_train_and_test(tv)
 #### gower with daisy: optimize gower weights ####
 
 # loop to optimize weights
-weights <- get_gower_weights(tv, min_vars = 3, n_combinations = 100)
+weights <- get_gower_weights(tv, min_vars = 3, n_combinations = 10)
 metrics <- get_gower_metrics_for_weights(tv, weights_matrix = weights, eval_fn = yardstick::roc_auc)
 weights_max <- get_gower_best_weights(weights, metrics, choose_by=c("accuracy","mean_metric","auc")[3])
 weights_manual <- c(credit_policy=1, purpose=1, int_rate=0, installment=0, log_annual_inc=0, 
@@ -138,7 +138,10 @@ get_metrics_with_dist(tt_num, fn=stats::dist, method="euclidian", eval_fn=yardst
 rf_no_neighbor <- get_rf_roc_curve(tt)
 
 # with gower
-tt_gower <- add_neighbor_target_from_dist_matrix(tt, dist = get_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max), p_add = FALSE)
+tt_gower <- add_neighbor_target_from_dist_matrix(
+                        tt, 
+                        dist = get_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max), 
+                        p_add = TRUE)
 rf_gower <- get_rf_roc_curve(tt_gower)
 
 # compare

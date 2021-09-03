@@ -1,5 +1,5 @@
 ---
-title: "R Notebook"
+title: "Optimizing Gower Weights in Feature Engineering (And Other Nearest-Neighbor Stories)"
 output: html_notebook
 ---
 
@@ -9,6 +9,8 @@ In this publication we will visit:
 
 * comparing nearest neighbor methods
 * optimizing variable weights in Gower
-* creating custom functions and use pipelines instead of scripting
+* creating custom, re-usable functions and use pipelines instead of scripting
+
+
 
 
