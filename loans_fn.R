@@ -320,7 +320,7 @@ get_roc_curves_in_same_plot <- function(roc_tbl)
     geom_line(size=1.5) +
     geom_abline(slope = 1, intercept = 0, size = 0.4, linetype="dashed") +
     coord_fixed() + # fixed aspect ratio
-    theme_gray(base_size=24)
+    theme_gray(base_size=18)
 }
 
 
