@@ -6,7 +6,7 @@ loans pip
 
 "
 rm(list=ls())
-v_target <- c("not_fully_paid", "purpose")[1]
+v_target <- "not_fully_paid"
 source("loans_fn.R")
 df <- load_data(as_df = TRUE)
 df <- df %>% slice_sample(n=3000)
