@@ -83,10 +83,11 @@ ttsplit <- function(df, prop_train=.7)
 
 
 # scale numeric vars
-scale_numeric_features_in_train_and_test <- function(tt)
+scale_numeric_features_in_train_and_test <- function(tt, exclude_target=TRUE)
 {
   # scale numeric features train & test
   v_num <- colnames(tt$train)[which(sapply(tt$train, class) %in% c("numeric", "integer"))]
+  if(exclude_target) v_num <- v_num[which(v_num != v_target)]
   scales <- dataPreparation::build_scales(data_set = tt$train, cols=v_num, verbose=TRUE)
   tt$train <- dataPreparation::fast_scale(data_set = tt$train, scales = scales, verbose = TRUE) %>% as.data.frame
   
