@@ -1,17 +1,26 @@
 ---
 title: "Placeholder"
 output:
+  html_notebook:
   html_document:
     df_print: paged
 ---
 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align='center', warning = FALSE)
+```
+
 "
-variable importances
-hide warnings & unnecessary output
+
 interpret graph les deux RF
 key takeaways
 future R
 recommandations cours datacamp tree based models; workspace pipes
+
+
+ADD TABLE OF CONTENT IN FIRST SECTION WHEN IM DONE
+
+ajouter github a la fin
 
 "
 
@@ -26,9 +35,9 @@ recommandations cours datacamp tree based models; workspace pipes
 
 In this publication we will:
 
-* Compare nearest-neighbor methods used to engineer a new feature
-* Optimize variable weights in a validation set for computing Gower distances
-* 
+* Compare nearest-neighbor methods for predicting a target in a test set
+* Optimize variable weights when using Gower distances
+* Compare predictive models with and without engineering a new nearest-neighbor feature
 * Create custom, re-usable functions and use pipelines instead of scripting, as is typical in R
 
 The improvement with this dataset and this target (`not_fully_paid`: whether the loan is paid or not) is small, but I have applied this method in other contexts with great improvements in predictive performance. In particular, multiclass classification with a large number of classes seems to benefit from this approach.
@@ -88,6 +97,8 @@ tv <- scale_numeric_features_in_train_and_test(tv)
 
 A powerful yet lesser known method for computing distances between observations in the Gower distance. Originally published in 1971 and developed to compare text, the Gower distance between two observations is **the (weighted) average difference between the two observations on selected variables**.
 
+![Gower's original 1971 article](https://i.imgur.com/HWsFPh1.png)
+
 For a categorical variable, the distance between two observations is 1 (the maximum) when the observations don't belong to the same category, and the distance is 0 (the minimum) when the observations belong to the same category.
 
 For a numerical variable, the distance is scaled by taking account the range of possible values for that variable. For example, if Person #1 has a score of 5, Person #2 has a score of 7, and the min and max in the dataset are 1 and 7 (a Likert scale), then the distance is $abs(5-7)/(7-1) = 0.33$.
@@ -107,7 +118,7 @@ $prob(dist) = (dist - min(distances)) / (max(distances) - min(distances))$
 
 I've also tried to normalize the log of distances, as well as the logistic function, and the logistic of the log distances. The logistic function applied to distances was the most natural one but it consistently yielded lower AUCs than simple normalization, while the logistic of log distances was equivalent to normalization.
 
-```{r}
+```{r warning=FALSE}
 # loop to optimize weights
 weights <- get_gower_weights(tv, min_vars = 3, n_combinations = 10) # generate possible combinations of 0-1 weights for each variable
 metrics <- get_gower_metrics_for_weights(tv, weights_matrix = weights, eval_fn = yardstick::roc_auc) # compute AUC for each combination of weights
@@ -123,7 +134,7 @@ weights_manual <- c(credit_policy=1, purpose=1, int_rate=0, installment=0, log_a
 
 Next we can compare different methods to calculate the distances used to find nearest neighbors in our dataset with our target variable. We do this by calculating the ROC curve for each method, and plotting the result. We include both versions of the Gower distance: the one with all variables equally weighted, and the one with the combination of variables that performed best on the validation set.
 
-```{r}
+```{r echo=TRUE, results='hide'}
 #### compare nearest-neighbors methods with ROC curves ####
 
 roc <- list()
@@ -140,13 +151,21 @@ roc$canberra <- get_metrics_with_dist(tt_num, fn=stats::dist, method="canberra",
 roc$binary <- get_metrics_with_dist(tt_num, fn=stats::dist, method="binary", eval_fn = yardstick::roc_curve)
 roc$minkowski <- get_metrics_with_dist(tt_num, fn=stats::dist, method="minkowski", eval_fn = yardstick::roc_curve)
 
+```
+Now we have a list of ROC curves for train and test sets for each distance. For example, here's the result for the Gower distances with optimized weights:
+```{r}
+roc$gower_best
+```
+
+We can plot these ROC curves in the test set separately for each method. This gives us a quick visual idea of which distances work best with our dataset.
+
+```{r}
 # plot
 roc <- make_list_of_roc_curves_into_single_table(roc)
 get_roc_curves_in_same_plot(roc) # comparing all methods
 get_roc_curves_in_same_plot(roc %>% filter(model %in% c("gower", "gower_best"))) # comparing Gower methods
 
 ```
-
 
 ## Comparing a Random Forest With and Without Nearest Neighbor Features
 
@@ -157,24 +176,29 @@ Rather than simply using the Nearest Neighbor feature as a predictive model itse
 #### do ROC curve comparing w vs w/o added neighbor features
 
 # no neighbor
-(rf_no_neighbor <- get_rf_roc_curve(tt))
+rf_no_neighbor <- get_rf_roc_curve(tt)
 
 # with gower
 tt_gower <- add_neighbor_target_from_dist_matrix(
                         tt, 
                         dist = get_dist(tt, cluster::daisy, metric="gower", stand=TRUE, weights=weights_max), 
                         p_add = TRUE)
-(rf_gower <- get_rf_roc_curve(tt_gower))
+rf_gower <- get_rf_roc_curve(tt_gower)
 
 # compare
-get_roc_curves_from_random_forests(list(no_neighbor=rf_no_neighbor, gower=rf_gower))
+get_roc_curves_from_random_forests(list(`No Neighbor`=rf_no_neighbor, Gower=rf_gower))
 
 ```
 
 
-interpret graph
+In this particular case, with no hyperparameter tuning in the random forests, the addition of a Gower neighbor with optimized weights yielded similar results to the random forest witout feature engineering. Looking at variable importances, it looks like `nn_p`, namely the Gower distance that we transformed into an approximate probability earlier, became one of the strongest predictors of the target in this dataset:
 
-variable importances: nn_p is distance normalized (used as approximate probability in ROC curve earlier)
+```{r}
+# Random Forest without neighbors
+rf_no_neighbor$var_imp
+# Random Forest with Gower neighbors with optimized weights
+rf_gower$var_imp
+```
 
 
 
@@ -193,6 +217,14 @@ variable importances: nn_p is distance normalized (used as approximate probabili
 * optim() to find true optimized combination of weights, with continuous weights instead of dichotomous 0 or 1
 * with missing data and lots of factor levels where gower shines
 * tuning model hyperparameters (like mtry in RF) separately for RF with and without neighbor feature, so that they both are optimized for the features they do have
+
+
+
+## Code Repository
+
+The entire code repository for this project is available on GitHub.
+
+[![Code Repository on GitHub](https://i.imgur.com/kDrGrBN.png)](https://github.com/patc3-phd/datacamp-loans-competition)
 
 
 
