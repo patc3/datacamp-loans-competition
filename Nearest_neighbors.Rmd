@@ -1,8 +1,3 @@
----
-title: "Optimizing Gower Weights in Feature Engineering"
-output:
-  html_document
----
 # Optimizing Gower Weights in Feature Engineering (And Other Nearest-Neighbor Stories)
 **By Patrick Coulombe, PhD (patrick.coulombe@d22consulting.com)**  
 **Last updated `r format(Sys.time(), '%B %d, %Y')`**
@@ -31,16 +26,12 @@ The improvement with this dataset and this target (`not_fully_paid`: whether the
 2. Load the Data  
 3. Prepare the Data  
 4. Optimizing Variable Weights in Gower Distances  
-  4.1. Gower Distance  
-  4.2. Evaluating Random Combinations of Variables  
 5. Comparing Methods for Calculating Distances and Finding Neighbors    
 6. Comparing a Random Forest With and Without Nearest Neighbor Features  
 7. Key Takeaways  
 8. Future Improvements  
 9. DataCamp Resources  
 10. Code Repository  
-  10.1. Pipeline (`loans_pip.R`)    
-  10.2. Custom Functions (`loans_fn.R`)  
 
 
 
@@ -131,7 +122,7 @@ I've also tried to normalize the log of distances, as well as the logistic funct
 
 ```{r warning=FALSE}
 # loop to optimize weights
-weights <- get_gower_weights(tv, min_vars = 3, n_combinations = 10) # generate possible combinations of 0-1 weights for each variable
+weights <- get_gower_weights(tv, min_vars = 3, n_combinations = 100) # generate possible combinations of 0-1 weights for each variable
 metrics <- get_gower_metrics_for_weights(tv, weights_matrix = weights, eval_fn = yardstick::roc_auc) # compute AUC for each combination of weights
 weights_max <- get_gower_best_weights(weights, metrics, choose_by=c("accuracy","mean_metric","auc")[3]) # extract best set of weights
 
@@ -181,6 +172,7 @@ get_roc_curves_in_same_plot(roc) # comparing all methods
 get_roc_curves_in_same_plot(roc %>% filter(Model %in% c("Gower", "Gower (Optimized Weights)"))) # comparing Gower methods
 
 ```
+
 Methods with a quicker rise ("to the top and left") have a better tradeoff between false positives and negatives (as represented by a larger AUC, literally the area under that curve). In this example, some methods perform better than others, with some numeric distances (like the binary distance) not yielding adequate performance with our data.
 
 Also, it looks like the Gower distances with optimized weights might be preferable to the vanilla Gower with all variables weighted equally at certain thresholds. On the other hand, the weights that we've manually chosen did not work well at all! In the absence of a business context to weight some variables more heavily than others, it could be better to leave the choice of weights to the optimization routine.
@@ -351,7 +343,7 @@ get_roc_curves_from_random_forests(list(`No Neighbor`=rf_no_neighbor, `Gower (Op
 
 ```{r, eval=FALSE}
 #### imports ####
-req_pckgs <- c("dplyr", "cluster", "tidymodels", "vip", "psych",  "fastDummies", "dataPreparation")
+req_pckgs <- c("dplyr", "cluster", "tidymodels", "vip", "psych", "randomForest",  "fastDummies", "dataPreparation")
 req_pckgs <- req_pckgs[which(!req_pckgs %in% rownames(installed.packages()))]
 if(length(req_pckgs) != 0) install.packages(req_pckgs)
 library(dplyr)
@@ -588,7 +580,7 @@ get_gower_metrics_for_weights <- function(tt, weights_matrix=NULL, eval_fn=yards
   metrics <- list()
   for (i in 1:nrow(weights)) 
   {
-    sink("NUL")
+    sink("/dev/null")
     m <- get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=weights[i,], eval_fn=eval_fn)
     metrics[[i]] <- if(isTRUE(all.equal(eval_fn, yardstick::conf_mat))) lapply(m, summary) else m
     sink()

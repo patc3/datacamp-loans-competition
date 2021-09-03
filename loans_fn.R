@@ -6,7 +6,7 @@ loans fn
 
 "
 #### imports ####
-req_pckgs <- c("dplyr", "cluster", "tidymodels", "vip", "psych",  "fastDummies", "dataPreparation")
+req_pckgs <- c("dplyr", "cluster", "tidymodels", "vip", "psych", "randomForest",  "fastDummies", "dataPreparation")
 req_pckgs <- req_pckgs[which(!req_pckgs %in% rownames(installed.packages()))]
 if(length(req_pckgs) != 0) install.packages(req_pckgs)
 library(dplyr)
@@ -243,7 +243,7 @@ get_gower_metrics_for_weights <- function(tt, weights_matrix=NULL, eval_fn=yards
   metrics <- list()
   for (i in 1:nrow(weights)) 
   {
-    sink("NUL")
+    sink("/dev/null")
     m <- get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=weights[i,], eval_fn=eval_fn)
     metrics[[i]] <- if(isTRUE(all.equal(eval_fn, yardstick::conf_mat))) lapply(m, summary) else m
     sink()
@@ -319,7 +319,7 @@ get_roc_curves_in_same_plot <- function(roc_tbl)
     ggplot(aes(x=1-specificity, y=sensitivity, color=Model)) +
     geom_line(size=1.5) +
     geom_abline(slope = 1, intercept = 0, size = 0.4, linetype="dashed") +
-    coord_fixed() + # fixed aspect ratio
+    #coord_fixed() + # fixed aspect ratio
     theme_gray(base_size=18)
 }
 
