@@ -323,49 +323,6 @@ get_gower_best_weights <- function(weights, metrics, choose_by=c("accuracy", "me
 
 
 
-# get roc curves using same function call as get_dist()
-get_roc_curves_for_dist <- function(..., plot_hist=FALSE)
-{
-  "
-  input:  ... is fn call to get_dist()
-  output: list of ggplots ROC curves (also prints histograms of probabilities)
-  "
-  
-  # get dist
-  dist <- get_dist(...)
-  
-  # functions to convert dist to probabilities
-  p_fn <- list(
-    NL=\(d)normalize(log(d)),
-    N=\(d)normalize(d),
-    LL=\(d)logistic(log(d)),
-    L=\(d)logistic(d)
-  )
-  
-  # get histograms of probabilities and roc curves
-  p_hist <- list()
-  roc_list<-list()
-  roc_auc <- list()
-  for(fn_name in names(p_fn))
-  {
-    tt_p <- add_neighbor_target_from_dist_matrix(tt = tt, dist = dist, 
-                                                 p_add = TRUE, p_fn = p_fn[[fn_name]])
-    if(plot_hist) p_hist[[fn_name]] <- lapply(tt_p, \(df)hist(df$nn_p, plot=F))
-    x<-tt_p$test$not_fully_paid
-    tt_p$test$not_fully_paid[which(x==min(x))] <- 0
-    tt_p$test$not_fully_paid[which(x==max(x))] <- 1
-    tt_p$test$not_fully_paid <- factor(tt_p$test$not_fully_paid, levels=c("1","0"), labels=c("Yes", "No")) # ensure first level is positive class
-    roc_auc[[fn_name]] <- roc_auc(tt_p$test, truth=not_fully_paid, estimate=nn_p)
-    roc_list[[fn_name]] <- roc_curve(tt_p$test, truth=not_fully_paid, estimate=nn_p)
-    #print(autoplot(roc))
-    #dev.new()
-  }
-  if(plot_hist) lapply(seq_along(p_hist), \(i) lapply(p_hist[[i]], \(h) plot(h, main=names(p_hist)[i])))
-  roc <- lapply(seq_along(roc_list), \(i) print(autoplot(roc_list[[i]]) + ggtitle(  paste0( names(roc_list)[i], " (AUC = ", round(roc_auc[[i]]$.estimate, 2), ")" )  )))
-  return(roc_auc)
-}
-
-
 # several roc curves in same graph
 # need the table roc curve table
 # x=1-specificity, y=sensitivity, color=model
