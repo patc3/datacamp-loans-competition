@@ -5,24 +5,24 @@ DataCamp competition
 loans pip
 
 "
+#### load & inspect data ####
 rm(list=ls())
-v_target <- "not_fully_paid"
-source("loans_fn.R")
+v_target <- "not_fully_paid" # set target
+source("loans_fn.R") # load custom functions to use in pipeline
 df <- load_data(as_df = TRUE)
-df <- df %>% slice_sample(n=3000)
-str(df)
-summary(df)
-
+df <- df %>% slice_sample(n=3000) # to reduce computations in Workspace
+head(df)
+psych::describe(df)
 
 
 #### compare nearest-neighbors methods ####
 # data prep
 df <- cast(df, type_from="character", type_to="factor") # purpose is a factor
 
-# tt
-tt <- ttsplit(df, .7)
-# tv (to choose gower weights)
-tv <- ttsplit(tt$train, .7)
+# tt: train-test split
+tt <- ttsplit(df, prop = .7) # list with tt$train and tt$test
+# tv: train-validation split (to choose gower weights)
+tv <- ttsplit(tt$train, prop = .7)
 
 # scale
 tt <- scale_numeric_features_in_train_and_test(tt)
@@ -34,15 +34,14 @@ tv <- scale_numeric_features_in_train_and_test(tv)
 #### gower with daisy: optimize gower weights ####
 
 # loop to optimize weights
-weights <- get_gower_weights(tv, min_vars = 3, n_combinations = 10)
-metrics <- get_gower_metrics_for_weights(tv, weights_matrix = weights, eval_fn = yardstick::roc_auc)
-weights_max <- get_gower_best_weights(weights, metrics, choose_by=c("accuracy","mean_metric","auc")[3])
+weights <- get_gower_weights(tv, min_vars = 3, n_combinations = 10) # generate possible combinations of 0-1 weights for each variable
+metrics <- get_gower_metrics_for_weights(tv, weights_matrix = weights, eval_fn = yardstick::roc_auc) # compute AUC for each combination of weights
+weights_max <- get_gower_best_weights(weights, metrics, choose_by=c("accuracy","mean_metric","auc")[3]) # extract best set of weights
+
+# we could also manually choose our own weights (why not?)
 weights_manual <- c(credit_policy=1, purpose=1, int_rate=0, installment=0, log_annual_inc=0, 
                     dti=0, fico=0, days_with_cr_line=0, revol_bal=0,
                     revol_util=0, inq_last_6mths=0, delinq_2yrs=0, pub_rec=1) %>% as.list %>% as.data.frame
-
-get_gower_metrics_for_weights(tt, weights_matrix = matrix(1)) # all weighted equally
-get_gower_metrics_for_weights(tt, weights_matrix = weights_max, eval_fn = yardstick::roc_curve)
 
 
 

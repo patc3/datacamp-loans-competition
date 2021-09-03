@@ -6,13 +6,13 @@ loans fn
 
 "
 #### imports ####
+req_pckgs <- c("dplyr", "cluster", "tidymodels", "vip", "psych",  "fastDummies", "dataPreparation")
+req_pckgs <- req_pckgs[which(!req_pckgs %in% rownames(installed.packages()))]
+if(length(req_pckgs) != 0) install.packages(req_pckgs)
 library(dplyr)
 library(cluster)
 library(tidymodels)
 library(vip)
-req_pckgs <- c("fastDummies", "dataPreparation")
-req_pckgs <- req_pckgs[which(!req_pckgs %in% rownames(installed.packages()))]
-if(length(req_pckgs) != 0) install.packages(req_pckgs)
 
 #### load data ####
 load_data <- function(as_df=FALSE)
