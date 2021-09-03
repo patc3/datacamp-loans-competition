@@ -1,7 +1,22 @@
 ---
 title: "Placeholder"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
+
+"
+variable importances
+hide warnings & unnecessary output
+interpret graph les deux RF
+key takeaways
+future R
+recommandations cours datacamp tree based models; workspace pipes
+
+"
+
+
+
 
 # Optimizing Gower Weights in Feature Engineering (And Other Nearest-Neighbor Stories)
 **By Patrick Coulombe, PhD (patrick.coulombe@d22consulting.com)**  
@@ -157,12 +172,27 @@ get_roc_curves_from_random_forests(list(no_neighbor=rf_no_neighbor, gower=rf_gow
 ```
 
 
+interpret graph
+
+variable importances: nn_p is distance normalized (used as approximate probability in ROC curve earlier)
 
 
 
 
 ## Key Takeaways
 
+
+
+
+
+
+
+## Future Improvements
+
+* several nearest neighbors and take modal target value (if numeric target: average or median)
+* optim() to find true optimized combination of weights, with continuous weights instead of dichotomous 0 or 1
+* with missing data and lots of factor levels where gower shines
+* tuning model hyperparameters (like mtry in RF) separately for RF with and without neighbor feature, so that they both are optimized for the features they do have
 
 
 
@@ -489,7 +519,7 @@ get_roc_curves_in_same_plot <- function(roc_tbl)
     geom_line(size=1.5) +
     geom_abline(slope = 1, intercept = 0, size = 0.4, linetype="dashed") +
     coord_fixed() + # fixed aspect ratio
-    theme_gray(base_size=24)
+    theme_gray(base_size=18)
 }
 
 
