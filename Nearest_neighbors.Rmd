@@ -1,18 +1,16 @@
 ---
-title: "Placeholder"
+title: "Optimizing Gower Weights in Feature Engineering"
 output:
-  html_notebook:
-  html_document:
-    df_print: paged
+  html_document
 ---
+# Optimizing Gower Weights in Feature Engineering (And Other Nearest-Neighbor Stories)
+**By Patrick Coulombe, PhD (patrick.coulombe@d22consulting.com)**  
+**Last updated `r format(Sys.time(), '%B %d, %Y')`**
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, fig.align='center', warning = FALSE)
 ```
-
-# Optimizing Gower Weights in Feature Engineering (And Other Nearest-Neighbor Stories)
-**By Patrick Coulombe, PhD (patrick.coulombe@d22consulting.com)**  
-**Last updated `r format(Sys.time(), '%B %d, %Y')`**
 
 ## Nearest Neighbors as Features
 
@@ -59,7 +57,7 @@ I investigate several ways to calculate distances, chief of which is the Gower m
 
 ## Load the Data
 
-```{r echo=TRUE, results='hide'}
+```{r echo=TRUE, results='hide', message=FALSE, warning=FALSE}
 v_target <- "not_fully_paid" # set target
 source("loans_fn.R") # load custom functions to use in pipeline
 df <- load_data(as_df = TRUE)
