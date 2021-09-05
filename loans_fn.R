@@ -74,16 +74,16 @@ ttsplit <- function(df, prop_train=.7)
 
 
 # scale numeric vars
-scale_numeric_features_in_train_and_test <- function(tt, exclude_target=TRUE)
+scale_numeric_features_in_train_and_test <- function(tt, exclude_target=TRUE, verbose=FALSE)
 {
   # scale numeric features train & test
   v_num <- colnames(tt$train)[which(sapply(tt$train, class) %in% c("numeric", "integer"))]
   if(exclude_target) v_num <- v_num[which(v_num != v_target)]
-  scales <- dataPreparation::build_scales(data_set = tt$train, cols=v_num, verbose=TRUE)
-  tt$train <- dataPreparation::fast_scale(data_set = tt$train, scales = scales, verbose = TRUE) %>% as.data.frame
+  scales <- dataPreparation::build_scales(data_set = tt$train, cols=v_num, verbose=verbose)
+  tt$train <- dataPreparation::fast_scale(data_set = tt$train, scales = scales, verbose = verbose) %>% as.data.frame
   
   # test
-  tt$test <- dataPreparation::fast_scale(data_set = tt$test, scales=scales, verbose=TRUE) %>% as.data.frame
+  tt$test <- dataPreparation::fast_scale(data_set = tt$test, scales=scales, verbose=verbose) %>% as.data.frame
   
   # out
   print("Created numerical scales using train set and rescaled numerical features in train and test")
