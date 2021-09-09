@@ -253,7 +253,7 @@ get_gower_metrics_for_weights <- function(tt, weights_matrix=NULL, eval_fn=yards
   metrics <- list()
   for (i in 1:nrow(weights)) 
   {
-    sink("/dev/null")
+    sink("NUL")
     m <- get_metrics_with_dist(tt, fn=cluster::daisy, metric="gower", stand=TRUE, weights=weights[i,], eval_fn=eval_fn)
     metrics[[i]] <- if(isTRUE(all.equal(eval_fn, yardstick::conf_mat))) lapply(m, summary) else m
     sink()
@@ -367,4 +367,26 @@ get_roc_curves_from_random_forests <- function(rf_list)
   rf_list %>% 
     bind_rows() %>% 
     get_roc_curves_in_same_plot()
+}
+
+
+
+#### target as missing data ####
+add_mice_prediction <- function(tt)
+{
+  .tt <- tt; .tt$test[,v_target] <- NA # to impute
+  df <- do.call(rbind, .tt)
+  imp <- mice(df, m=20)
+  pred <- partial(apply, X=imp$imp[[v_target]], MARGIN=1) #apply(, mode) # mean for AUC
+  
+  # add to test
+  tt$test$nn <- pred(mode)
+  tt$test$nn_p <- pred(mean)
+  
+  # add to train
+  tt$train$nn <- tt$train$nn_p <- tt$train[,v_target]
+  
+  # out
+  print("Added variables nn and nn_p from mode and mean imputed target value to test set")
+  return(tt)
 }
