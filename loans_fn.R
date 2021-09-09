@@ -14,6 +14,7 @@ library(cluster)
 library(tidymodels)
 library(vip)
 library(mice)
+library(missForest)
 
 #### helper fn ####
 view <- utils::View
@@ -372,6 +373,8 @@ get_roc_curves_from_random_forests <- function(rf_list)
 
 
 #### target as missing data ####
+
+# multiple imputation with mice
 add_mice_prediction <- function(tt, ...)
 {
   .tt <- tt; .tt$test[,v_target] <- NA # to impute
@@ -390,3 +393,25 @@ add_mice_prediction <- function(tt, ...)
   print("Added variables nn and nn_p from mode and mean imputed target value to test set")
   return(tt)
 }
+
+# random forest imputation
+add_rf_prediction <- function(tt, ...)
+{
+  .tt <- tt; .tt$test[,v_target] <- NA # to impute
+  df <- do.call(rbind, .tt)
+  if(length(unique(df[,v_target])) <= 5) df[,v_target] <- as.factor(df[,v_target])
+  imp <- missForest(df, parallelize="no", ...) # xtrue=do.call(rbind, tt)
+  pred <- imp$ximp[,v_target]
+  
+  # add to test
+  tt$test$nn <- pred[(nrow(tt$train)+1):nrow(df)]
+  #tt$test$nn_p <- NULL
+  
+  # add to train
+  tt$train$nn <- pred[1:nrow(tt$train)]
+  
+  # out
+  print("Added variable nn from Random Forest imputation to test set")
+  return(tt)
+}
+

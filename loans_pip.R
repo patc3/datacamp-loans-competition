@@ -99,4 +99,7 @@ get_metrics(tt_imp)
 get_metrics(tt_imp, eval_fn = roc_auc)
 get_metrics(tt_imp, eval_fn = roc_curve)$test %>% autoplot()
 
+# rf
+tt_imp <- add_rf_prediction(tt)#, ntree=100, mtry=8)
+get_metrics(tt_imp)
 
