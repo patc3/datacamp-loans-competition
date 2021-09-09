@@ -372,11 +372,11 @@ get_roc_curves_from_random_forests <- function(rf_list)
 
 
 #### target as missing data ####
-add_mice_prediction <- function(tt)
+add_mice_prediction <- function(tt, ...)
 {
   .tt <- tt; .tt$test[,v_target] <- NA # to impute
   df <- do.call(rbind, .tt)
-  imp <- mice(df, m=20)
+  imp <- mice(df, ...)
   pred <- partial(apply, X=imp$imp[[v_target]], MARGIN=1) #apply(, mode) # mean for AUC
   
   # add to test

@@ -94,9 +94,9 @@ get_roc_curves_from_random_forests(list(`No Neighbor`=rf_no_neighbor, `Gower (Op
 
 
 #### target as missing data ####
-tt <- add_mice_prediction(tt)
-get_metrics(tt)
-get_metrics(tt, eval_fn = roc_auc)
-get_metrics(tt, eval_fn = roc_curve)$test %>% autoplot()
+tt_imp <- add_mice_prediction(tt, m=20, maxit=5)
+get_metrics(tt_imp)
+get_metrics(tt_imp, eval_fn = roc_auc)
+get_metrics(tt_imp, eval_fn = roc_curve)$test %>% autoplot()
 
 
