@@ -13,6 +13,16 @@ library(dplyr)
 library(cluster)
 library(tidymodels)
 library(vip)
+library(mice)
+
+#### helper fn ####
+view <- utils::View
+
+# see https://stackoverflow.com/a/8189441/2303302 ; in case of tie this returns the first one
+mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
 
 #### load data ####
 load_data <- function(as_df=FALSE)
